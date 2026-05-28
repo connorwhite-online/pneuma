@@ -289,6 +289,87 @@ pages and are marked `[med]` where not read verbatim.
 
 ---
 
+## 6. Electronics core decision (nRF5340 + SPI camera)
+
+A second research pass evaluated the *best* core for a brain-offloaded I/O node,
+dropping the earlier "off-the-shelf board" framing. Three cores compared:
+(A) single ESP32-S3, (B) dual-MCU nRF + ESP32-S3, (C) single nRF5340 + SPI camera.
+
+### Power — the decisive factor
+- **ESP32-S3 cannot run wake-word detection from deep sleep**; always-listening
+  holds it at ~**25–40 mA**. nRF in the same state is ~**3–8 mA** — a **5–8× gap**
+  in the state the device occupies ~99% of the time. `[med-high]`
+- ESP32-S3: active ~23.9 mA, light-sleep ~2 mA, deep-sleep ~8 µA (but can't KWS in
+  deep sleep). `[high]`
+  https://docs.espressif.com/projects/esp-idf/en/stable/esp32s3/api-guides/current-consumption-measurement-modules.html
+- nRF5340: radio TX 0 dBm ~3.2 mA, RX ~2.6 mA; full LE Audio in-call ~3.4 mA
+  (16 kHz LC3); System-ON sleep ~2.8 µA (RAM retained). `[high]`
+  https://docs.nordicsemi.com/bundle/ps_nrf5340/page/keyfeatures_html5.html
+- Battery life on 250 mAh: ~6.7 h (ESP32-S3 ~30 mA) vs ~33–67 h (nRF ~4–8 mA).
+  Cross-check: Omi (XIAO nRF52840, 150 mAh) gets ~10–14 h continuous listening. `[high]`
+  → **Rules out single ESP32-S3 (A).**
+
+### Camera over SPI + one frame over BLE (makes C viable)
+- **ArduCAM Mega** (3MP/5MP, 4-wire SPI, **on-chip JPEG**) — the host MCU never
+  touches raw pixels, so an nRF with no DCMI can use it. SCLK ≤ 8 MHz (~1 MB/s).
+  ~$30–50. `[high]`
+  https://docs.arducam.com/Arduino-SPI-camera/MEGA-SPI/MEGA-SPI-Camera/
+- **Nordic maintains the exact integration** — Zephyr `ncs-arducam-mega-driver`
+  with a `take_picture` sample targeting `nrf5340dk` + `nrf52840dk`, an upstream
+  `arducam,mega` SPI binding, and BLE/Wi-Fi image-transfer demos. Real, not
+  theoretical. `[high]`
+  https://github.com/too1/ncs-arducam-mega-driver ,
+  https://github.com/NordicPlayground/nrf52-ble-image-transfer-demo
+- **BLE throughput (nRF5340, 2M PHY + DLE + large MTU): ~1.0–1.4 Mbps** (~125–170
+  KB/s). One JPEG: 10 KB ≈ 60–100 ms, 30 KB ≈ 0.18–0.24 s, 50 KB ≈ 0.30–0.40 s —
+  **sub-1s on demand**. Phone-negotiated PHY/interval can lower this; validate on
+  target phones. `[high numbers, med phone-dependent]`
+  https://docs.nordicsemi.com/bundle/ncs-latest/page/nrf/samples/bluetooth/throughput/README.html
+- Continuous video over BLE is infeasible (~5 fps ceiling, eats the whole radio
+  budget) — irrelevant here since we fetch one frame on demand. `[high]`
+- JPEG size is scene-dependent (no clean spec table); 10–50 KB ≈ QVGA–VGA at
+  moderate quality (extrapolated). `[med]`
+
+### Wake word on nRF (the soft spot, but adequate)
+- **microWakeWord does NOT port** — it depends on ESP32-S3 Xtensa vector
+  instructions (esp-nn) + PSRAM. `[high]` https://microwakeword.com/
+- nRF path: a small DS-CNN keyword model via **TFLite-Micro + CMSIS-NN** (or Edge
+  Impulse, officially supporting the nRF5340 DK). A single wake word (~20–100 KB
+  INT8) fits the M33's 512 KB RAM; accuracy is model-bound, not silicon-bound. `[med-high]`
+  https://docs.edgeimpulse.com/docs/edge-ai-hardware/mcu/nordic-semi-nrf5340-dk
+- Always-on KWS on Cortex-M is a shipping pattern in hearables (Sensory, NXP
+  VoiceSpot, Porcupine) at single-digit-mW. For an open project, avoid Porcupine
+  (proprietary custom words) — train an open DS-CNN. `[high]`
+- No published nRF5340-specific always-on KWS power number found — estimate only. `[low]`
+
+### nRF5340 fit
+- Dual Cortex-M33 (128 MHz app / 64 MHz net), 1 MB flash, 512 KB RAM; **native
+  PDM + I2S with audio PLL**; **LC3 + full LE Audio** via nRF Connect SDK. One chip
+  covers mic, speaker, codec, and BLE. `[high]`
+  https://www.nordicsemi.com/-/media/Software-and-other-downloads/Product-Briefs/nRF5340-SoC-PB.pdf
+
+### Power-path & mic parts (for the BOM)
+- Charger: **MCP73831** (500 mA linear, tiny) or **BQ25180** (I2C, ship-mode) for
+  the smallest build. Fuel gauge: **MAX17048** (<5 µA). Camera gated by a load
+  switch (e.g. TPS22919). Enable the nRF internal DC/DC. `[high]`
+- Mic: **Infineon IM69D130** (69 dB SNR, 130 dBSPL AOP, PDM, ~980 µA) — single
+  MEMS is the right baseline; 2-mic beamforming on a moving pendant isn't worth
+  the complexity unless done with a dedicated NN front-end. `[high / med]`
+  https://www.infineon.com/dgdl/Infineon-IM69D130-DS-v01_00-EN.pdf
+
+### Verdict
+**Single nRF5340 + ArduCAM Mega SPI camera is the best core** for this device
+(LLM offloaded, one on-demand JPEG, no live video, phone is the uplink). A
+separate ESP32-S3 is only warranted for Wi-Fi-without-phone, live video, or heavy
+on-device ML — none in scope. `[med-high]`
+
+*Optional upgrade considered:* a **Syntiant NDP120** always-on audio NN front-end
+(<1 mW KWS, optional 2-mic beamforming) waking the nRF — the lowest-power, most
+"correct" way to get always-on voice + array if mic performance becomes a
+differentiator. `[high that it exists; deferred]`
+
+---
+
 ## Method & caveats
 
 - Research conducted via parallel multi-source web search + fetch, May 2026.

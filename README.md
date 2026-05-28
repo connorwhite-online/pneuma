@@ -39,9 +39,9 @@ incumbents structurally can't offer.
 ## How the model works (in one diagram)
 
 ```
-        ┌─────────────────┐        BLE (Opus audio)        ┌────────────────────┐
+        ┌─────────────────┐    BLE (LC3 audio + JPEG frame)  ┌────────────────────┐
         │     PENDANT      │  ───────────────────────────▶  │   COMPANION APP    │
-        │  (credential-    │   Wi-Fi burst (camera frame)   │   (holds keys,     │
+        │  (credential-    │   on-demand photo over BLE     │   (holds keys,     │
         │   free)          │  ───────────────────────────▶  │   routes provider) │
         │                  │  ◀───────────────────────────  │                    │
         │ • wake word      │        audio reply             └─────────┬──────────┘
@@ -70,18 +70,22 @@ pneuma/
 ├── docs/
 │   ├── ARCHITECTURE.md  ← system design, provider abstraction, ADRs
 │   └── RESEARCH.md       ← sourced research the design is built on
-├── firmware/            ← (planned) ESP32-S3 firmware
-├── app/                 ← (planned) companion app + provider router
-└── hardware/            ← (planned) BOM, schematics, wiring, enclosure
+├── hardware/
+│   └── BOM.md           ← bill of materials + interconnect map
+├── firmware/            ← (planned) nRF5340 firmware (Zephyr / nRF Connect SDK)
+└── app/                 ← (planned) companion app + provider router
 ```
 
-## Hardware target (v1)
+## Hardware core
 
-A single **Seeed XIAO ESP32-S3 Sense** (~21×17.5 mm, camera + PDM mic + BLE +
-Wi-Fi onboard, ~$14) + a micro-speaker, a button, a haptic motor, an RGB LED, and
-a small LiPo. Chosen so anyone can buy the board off the shelf and flash it. Full
-BOM and wiring will live in `hardware/`. See ADR-0001 in
-[`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for why.
+A single **Nordic nRF5340** (BLE 5.x, dual Cortex-M33, native PDM mic + I2S audio
++ LC3/LE Audio) driving an **ArduCAM Mega SPI camera** (on-chip JPEG, one frame on
+demand), an I2S micro-speaker, a MEMS mic, a button, an LRA haptic motor, and an
+RGB LED, on a small LiPo. One chip, one radio — chosen for best-in-class idle
+power (the device is always listening) and because Nordic maintains the exact
+nRF5340 + ArduCAM driver. Full BOM and interconnect in
+[`hardware/BOM.md`](hardware/BOM.md); rationale in ADR-0001 in
+[`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
 
 ## License
 
