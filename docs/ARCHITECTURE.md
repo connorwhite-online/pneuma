@@ -296,3 +296,35 @@ mode** (local STT + LLM + TTS) as a first-class option.
 **Status:** Accepted. See §6 for rationale (skull-contact requirement makes bone
 conduction unsuitable for a free-hanging pendant; collarbone is its worst
 location).
+
+### ADR-0004 — The companion app is Flutter, with a pure-Dart `pneuma-core` engine
+
+**Status:** Accepted.
+
+**Context.** The app must do BLE, on-device WebRTC (OpenAI Realtime) + WebSocket
+(Gemini Live), secure credential storage, and the provider router — on both iOS
+and Android, as an open-source project that wants contributors.
+
+**Decision.** Build the app in **Flutter**, with all provider/router/session/BLE
+logic in a **pure-Dart `pneuma-core`** package that has no UI/OS dependencies.
+
+**Rationale.** Single cross-platform codebase; mature BLE/WebRTC/WebSocket
+libraries; `pneuma-core` is reusable headless inside an optional self-hosted hub;
+precedent set by Omi's Flutter app. React Native/Expo is the main alternative.
+See [`APP.md`](APP.md) §4.
+
+### ADR-0005 — Default topology is direct-to-provider; the hub is optional
+
+**Status:** Accepted.
+
+**Context.** "Bring your own LLM" with a credible privacy story requires deciding
+whether a Pneuma-operated server sits between the user and their model.
+
+**Decision.** **No Pneuma server by default.** The app talks directly to the
+user's chosen provider; keys and audio go phone → provider only. A self-hostable
+**Pneuma hub** (running the same `pneuma-core` headless) is an *optional* path for
+local-model / off-grid / shared-household use.
+
+**Consequences.** The trust story is clean (no middleman); Tier-2 composed
+pipelines and local models run from the app or the user's own hub, never our
+infrastructure. See [`APP.md`](APP.md) §3.

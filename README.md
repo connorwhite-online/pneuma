@@ -69,11 +69,13 @@ pneuma/
 ├── README.md            ← you are here
 ├── docs/
 │   ├── ARCHITECTURE.md  ← system design, provider abstraction, ADRs
+│   ├── APP.md           ← companion app design (the brain-router)
+│   ├── PROTOCOL.md      ← BLE contract shared by firmware + app
 │   └── RESEARCH.md       ← sourced research the design is built on
 ├── hardware/
 │   └── BOM.md           ← bill of materials + interconnect map
 ├── firmware/            ← (planned) nRF5340 firmware (Zephyr / nRF Connect SDK)
-└── app/                 ← (planned) companion app + provider router
+└── app/                 ← (planned) Flutter companion app + pneuma-core router
 ```
 
 ## Hardware core
