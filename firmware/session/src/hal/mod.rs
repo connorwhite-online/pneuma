@@ -27,6 +27,14 @@ impl WakeReason {
 /// Microphone source (PDM/I2S). Returns `None` to mark the end of the user's turn.
 pub trait AudioIn: Send {
     fn next_chunk(&mut self) -> Option<AudioChunk>;
+
+    /// After the model replies, did the user keep talking — i.e. is there more
+    /// speech within the follow-up window? `false` ends the conversation
+    /// (→ Forget). Real drivers implement this with VAD + a short timeout.
+    /// Default: single-turn.
+    fn awaiting_followup(&mut self) -> bool {
+        false
+    }
 }
 
 /// Speaker sink (I2S → amp).

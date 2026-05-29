@@ -10,8 +10,37 @@
 //! state machine in `crate::state` is provider-agnostic. Adding a model = adding
 //! one driver here + a stored key.
 
+pub mod composed;
 pub mod mock;
 pub mod openai;
+
+use crate::config::DeviceConfig;
+use crate::secure::KeyStore;
+
+/// Build the configured provider driver — the router entry point. Maps the
+/// provisioned provider id to a Tier-1 (realtime) or Tier-2 (composed) driver and
+/// wires the API key from secure storage. See docs/ARCHITECTURE.md §3.
+pub fn build(config: &DeviceConfig, keys: &dyn KeyStore) -> Result<Box<dyn Provider>, ProviderError> {
+    match config.provider.as_str() {
+        "mock" => Ok(Box::new(mock::MockProvider)),
+        "mock-composed" => Ok(Box::new(composed::mock_composed())),
+        "openai" => {
+            let api_key = keys.get(&config.key_ref)?;
+            Ok(Box::new(openai::OpenAiRealtime {
+                api_key,
+                model: config.model.clone(),
+            }))
+        }
+        // Claude has no native speech-to-speech → Tier-2 composed (driver TODO).
+        "claude" => Err(ProviderError::Unsupported(
+            "claude (composed STT→LLM→TTS) driver not implemented yet — see provider/composed.rs"
+                .to_string(),
+        )),
+        other => Err(ProviderError::Unsupported(format!(
+            "unknown provider '{other}'"
+        ))),
+    }
+}
 
 /// A chunk of mic audio (PCM/Opus; encoding negotiated per provider).
 pub type AudioChunk = Vec<u8>;
@@ -101,3 +130,29 @@ impl std::fmt::Display for ProviderError {
 }
 
 impl std::error::Error for ProviderError {}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::config::DeviceConfig;
+    use crate::secure::MockKeyStore;
+
+    fn cfg(p: &str) -> DeviceConfig {
+        DeviceConfig {
+            provider: p.into(),
+            model: "m".into(),
+            key_ref: "secure://none".into(),
+        }
+    }
+
+    #[test]
+    fn router_builds_both_tiers_and_rejects_unknown() {
+        let k = MockKeyStore;
+        assert_eq!(build(&cfg("mock"), &k).unwrap().tier(), Tier::Realtime);
+        assert_eq!(
+            build(&cfg("mock-composed"), &k).unwrap().tier(),
+            Tier::Composed
+        );
+        assert!(build(&cfg("nope"), &k).is_err());
+    }
+}

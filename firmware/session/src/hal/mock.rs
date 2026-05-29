@@ -8,14 +8,22 @@ use std::collections::VecDeque;
 pub struct MockMic {
     per_turn: usize,
     left: usize,
+    followups_left: usize,
 }
 
 impl MockMic {
+    /// A single-turn interaction of roughly `seconds` of speech.
     pub fn with_seconds(seconds: usize) -> Self {
+        Self::conversation(seconds, 0)
+    }
+
+    /// A multi-turn conversation: an initial turn plus `followups` more.
+    pub fn conversation(seconds: usize, followups: usize) -> Self {
         let n = seconds * 5; // ~5 chunks/sec, placeholder
         MockMic {
             per_turn: n,
             left: n,
+            followups_left: followups,
         }
     }
 }
@@ -28,6 +36,15 @@ impl AudioIn for MockMic {
         }
         self.left -= 1;
         Some(vec![0u8; 320]) // ~20 ms placeholder frame
+    }
+
+    fn awaiting_followup(&mut self) -> bool {
+        if self.followups_left > 0 {
+            self.followups_left -= 1;
+            true
+        } else {
+            false
+        }
     }
 }
 

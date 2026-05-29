@@ -23,11 +23,17 @@ implementation plan) is in `session/src/provider/openai.rs`.
 Layout:
 | Path | Job |
 |------|-----|
-| `src/state.rs` | the interaction state machine |
-| `src/provider/` | `Provider`/`Session` traits + drivers (`mock`, `openai` stub) |
-| `src/hal/` | hardware traits (`AudioIn`, `Camera`, `Modem`, …) + mocks |
+| `src/state.rs` | the multi-turn interaction state machine |
+| `src/provider/` | `Provider`/`Session` traits, `build()` router, Tier-1 (`mock`, `openai` stub) + Tier-2 `composed` (STT→LLM→TTS) |
+| `src/hal/` | hardware traits (`AudioIn`+VAD, `Camera`, `Modem`, …) + mocks |
 | `src/memory.rs` | the bounded memory file (load/save/compact + tests) |
+| `src/secure.rs` | `KeyStore` — resolves the API key from secure storage |
 | `src/config.rs` | device config (provider/model/key handle) |
+
+`provider::build(&config, &keystore)` is the router: it maps the provisioned
+provider id to a Tier-1 or Tier-2 driver and pulls the key from the keystore. Both
+tiers run on the laptop via mocks (`cargo run` shows a realtime conversation and a
+composed query back to back).
 
 ## `wake-island/` — always-on co-processor (C, nRF52840 / nRF Connect SDK)
 

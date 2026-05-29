@@ -75,9 +75,10 @@ impl Pneuma {
             system_prompt: SYSTEM_PROMPT.to_string(),
         };
         println!(
-            "  [provider:{}] starting session (model={})",
+            "  [provider:{}] starting session (model={}, tier={:?})",
             self.provider.name(),
-            opts.model
+            opts.model,
+            self.provider.tier()
         );
         let (mut session, events) = self.provider.start_session(opts)?;
 
@@ -89,29 +90,42 @@ impl Pneuma {
             }
         }
 
-        // CONVERSE — stream the turn's mic audio up, then close the turn.
+        // CONVERSE — one or more turns within the open session. Each turn streams
+        // the user's speech up, then drains the model's reply; the conversation
+        // continues while the mic reports a follow-up (VAD) and ends otherwise.
         println!("  [state] {:?}", State::Converse);
-        while let Some(chunk) = self.mic.next_chunk() {
-            session.push_audio(chunk)?;
-        }
-        session.end_turn()?;
-
         let mut pending: Vec<MemoryOp> = Vec::new();
-        for ev in events.iter() {
-            match ev {
-                SessionEvent::AudioReply(audio) => self.speaker.play(&audio),
-                SessionEvent::Transcript(t) => println!("  [transcript] {t}"),
-                SessionEvent::MemoryUpdate(op) => {
-                    println!("  [memory] proposed: {op:?}");
-                    pending.push(op);
-                }
-                SessionEvent::ToolCall { name, args } => println!("  [tool] {name}({args})"),
-                SessionEvent::TurnComplete => break,
-                SessionEvent::Error(e) => {
-                    eprintln!("  [error] {e}");
-                    break;
+        let mut turn = 1usize;
+        loop {
+            if turn > 1 {
+                println!("  [state] Converse (follow-up turn {turn})");
+            }
+            while let Some(chunk) = self.mic.next_chunk() {
+                session.push_audio(chunk)?;
+            }
+            session.end_turn()?;
+
+            for ev in events.iter() {
+                match ev {
+                    SessionEvent::AudioReply(audio) => self.speaker.play(&audio),
+                    SessionEvent::Transcript(t) => println!("  [transcript] {t}"),
+                    SessionEvent::MemoryUpdate(op) => {
+                        println!("  [memory] proposed: {op:?}");
+                        pending.push(op);
+                    }
+                    SessionEvent::ToolCall { name, args } => println!("  [tool] {name}({args})"),
+                    SessionEvent::TurnComplete => break,
+                    SessionEvent::Error(e) => {
+                        eprintln!("  [error] {e}");
+                        break;
+                    }
                 }
             }
+
+            if !self.mic.awaiting_followup() {
+                break;
+            }
+            turn += 1;
         }
         session.close();
 
@@ -127,5 +141,48 @@ impl Pneuma {
             self.memory.serialize().len()
         );
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::hal::mock::{MockCamera, MockMic, MockModem, MockSpeaker};
+    use crate::memory::{Memory, DEFAULT_CAP_BYTES};
+    use crate::provider::mock::MockProvider;
+
+    fn device(mic: MockMic, mem: Memory, file: &str) -> Pneuma {
+        Pneuma::new(
+            Box::new(mic),
+            Box::new(MockSpeaker),
+            Box::new(MockCamera),
+            Box::new(MockModem::offline()),
+            Box::new(MockProvider),
+            mem,
+            std::env::temp_dir().join(file),
+            DeviceConfig::default(),
+        )
+    }
+
+    #[test]
+    fn visual_query_updates_memory() {
+        let mut d = device(
+            MockMic::with_seconds(1),
+            Memory::new(DEFAULT_CAP_BYTES),
+            "pneuma_test_visual.toml",
+        );
+        d.run_once(WakeReason::Visual).unwrap();
+        assert!(d.memory().facts().iter().any(|f| f.contains("coffee")));
+    }
+
+    #[test]
+    fn multi_turn_conversation_completes() {
+        // A two-turn conversation must drain both turns and return (not hang).
+        let mut d = device(
+            MockMic::conversation(1, 1),
+            Memory::new(DEFAULT_CAP_BYTES),
+            "pneuma_test_multiturn.toml",
+        );
+        d.run_once(WakeReason::WakeWord).unwrap();
     }
 }
