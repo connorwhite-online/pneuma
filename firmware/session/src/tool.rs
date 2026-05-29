@@ -61,10 +61,65 @@ impl Tool for GetTime {
     }
 }
 
-/// The default tool set wired into a device.
+/// Location from the GNSS receiver (needs a GNSS-capable modem + antenna — see BOM).
+pub struct GetLocation;
+impl Tool for GetLocation {
+    fn name(&self) -> &str {
+        "get_location"
+    }
+    fn description(&self) -> &str {
+        "Get the device's current GPS location."
+    }
+    fn call(&self, _args: &str) -> Result<String, String> {
+        Ok("{\"lat\":45.5152,\"lon\":-122.6784,\"accuracy_m\":8}".to_string())
+    }
+}
+
+/// Directions to a destination (calls a maps API in the real impl). On-demand
+/// ("how do I get to X?"); live turn-by-turn is the sustained nav power mode.
+pub struct Directions;
+impl Tool for Directions {
+    fn name(&self) -> &str {
+        "directions"
+    }
+    fn description(&self) -> &str {
+        "Walking directions to a destination from the current location."
+    }
+    fn call(&self, args: &str) -> Result<String, String> {
+        Ok(format!(
+            "{{\"dest\":\"{}\",\"summary\":\"head north 400 m, then left for 200 m\",\"eta_min\":7}}",
+            args.trim()
+        ))
+    }
+}
+
+/// Play music from the linked Spotify (Premium) account via librespot, out to a
+/// Bluetooth sink or the speaker. Real impl gates on account + a BT-audio path.
+pub struct PlayMusic;
+impl Tool for PlayMusic {
+    fn name(&self) -> &str {
+        "play_music"
+    }
+    fn description(&self) -> &str {
+        "Play music from the linked Spotify account."
+    }
+    fn call(&self, args: &str) -> Result<String, String> {
+        Ok(format!(
+            "{{\"playing\":\"{}\",\"source\":\"spotify\",\"output\":\"bluetooth\"}}",
+            args.trim()
+        ))
+    }
+}
+
+/// The default tool set wired into a device. Real builds register a tool only when
+/// its hardware/config is present (GNSS for location, a BT-audio path + Spotify
+/// account for music).
 pub fn default_registry() -> ToolRegistry {
     let mut r = ToolRegistry::new();
     r.register(Box::new(GetTime));
+    r.register(Box::new(GetLocation));
+    r.register(Box::new(Directions));
+    r.register(Box::new(PlayMusic));
     r
 }
 
@@ -76,6 +131,9 @@ mod tests {
     fn runs_known_and_reports_unknown() {
         let r = default_registry();
         assert!(r.run("get_time", "{}").contains("3:00 PM"));
+        assert!(r.run("get_location", "{}").contains("lat"));
+        assert!(r.run("directions", "the park").contains("eta_min"));
+        assert!(r.run("play_music", "lo-fi beats").contains("spotify"));
         assert!(r.run("nope", "{}").contains("unknown tool"));
     }
 }

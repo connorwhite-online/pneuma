@@ -73,6 +73,20 @@ by the SoC board, modem, and battery.
 - **No vendor STEP** for the SC3336 camera or LilyGO carrier — measure with calipers
   (both are simple rectangular boards).
 
+### Optional capability add-ons (location, Bluetooth audio)
+- **GNSS / location:** use a **GNSS-capable modem** (the prototyping SIM7670G /
+  LilyGO A7670**G** already include GNSS; the bare EG915U does **not** — add a GNSS
+  chip like u-blox MAX-M10 / Quectel L76) **+ a small GNSS antenna** (~7 mm GPS chip
+  antenna, or a **cellular+GNSS combo flex** = one part, two U.FL leads). Enables the
+  `get_location` / `directions` tools (ARCHITECTURE §8).
+- **Bluetooth audio out (AirPods / BT headphones):** wanted for private/clear AI
+  voice *and* music. Needs a **Bluetooth Classic + A2DP source** path — **not
+  guaranteed on the RV1106 IPC BSP** (BLE-leaning). Validate A2DP on the combo module
+  + BlueZ, or add a **dedicated BT-audio chip** (e.g. a BM83-class module). Open item,
+  not confirmed.
+- **Spotify:** software only — **librespot** (MIT, Rust) on the SoC; needs Spotify
+  Premium. Music over cellular ~1 MB/min — prefer Wi-Fi.
+
 ---
 
 ## 2. Interconnect map

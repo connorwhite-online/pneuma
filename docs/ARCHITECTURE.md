@@ -228,6 +228,32 @@ in [`ENCLOSURE.md`](ENCLOSURE.md). See ADR-0006 and ADR-0007.
 
 ---
 
+## 8. Capabilities & power modes
+
+Beyond conversation, the device's abilities are **tools** (§3, MCP-style) the model
+invokes — adding a capability = adding a tool + any hardware it needs (real builds
+register a tool only when its hardware/config is present). Each capability implies a
+**power mode**:
+
+| Mode | What | Power | Notes |
+|------|------|-------|-------|
+| Sleep / listen | wake-island only | µA–mA | always |
+| On-demand Q&A | wake → cloud realtime burst → sleep | ~3 W, ~30–60 s | the core loop |
+| Navigation | fetch route once → wake-island tracks GPS → SoC wakes per turn | ~0.3–0.7 W, sustained | needs a GNSS-capable modem + GNSS antenna; ~10–20 h |
+| Media (Spotify/BT) | librespot stream → Bluetooth audio out | ~0.5–1 W, sustained | Premium; ~1 MB/min cellular data — prefer Wi-Fi; needs a BT-Classic/A2DP path |
+
+- **Location/directions** — `get_location` + `directions` tools. On-demand ("how do
+  I get to X?") is on-grain; live turn-by-turn is cheap *because the route is cached
+  and tracking runs on the wake-island*, with the SoC waking only per turn.
+- **Bluetooth audio out** — pairs AirPods/BT headphones as an A2DP sink, which also
+  makes the AI's *voice* private/clear (the micro-speaker fallback, ADR-0003). A2DP
+  source is **not guaranteed on the RV1106 IPC BSP** (BLE-leaning) — validate or add
+  a dedicated BT-audio path (see BOM).
+- **Music over cellular is data-heavy** (~60 MB/h vs voice's ~20 MB/h) — fine on
+  Wi-Fi, real money on a metered IoT SIM.
+
+---
+
 ## Architecture Decision Records
 
 > **Decision history.** Earlier drafts assumed a phone-tethered, credential-free
