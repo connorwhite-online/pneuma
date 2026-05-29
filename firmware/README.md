@@ -1,27 +1,38 @@
 # Pneuma firmware
 
-Two pieces of software run on the device (no phone, no app):
+Two programs, matching the two-tier brain (see [../docs/ARCHITECTURE.md](../docs/ARCHITECTURE.md)).
 
-## 1. Wake-island firmware (always-on MCU — nRF52840 / Syntiant)
-- Always-on wake-word KWS (Cortex-M DS-CNN via TFLite-Micro + CMSIS-NN, or
-  Syntiant NDP120 front-end)
-- Button handling (tap / double / long)
-- Powers the Linux session SoC up/down (`SOC_EN`) on demand
-- Owns the instant UX cues (wake chime, "listening" LED) before the SoC boots
-- BLE for one-time provisioning
+## `session/` — the session brain (Rust, Linux SoC)
 
-## 2. Session software (Linux SoC — Rockchip RV1106-class)
-- The provider router (Tier-1 realtime / Tier-2 composed) — see ARCHITECTURE §3
-- Cellular session over Cat-1 bis (WebRTC / TLS-WebSocket)
-- On-demand camera capture (MIPI-CSI ISP → JPEG)
-- Audio I/O (PDM mic in, I2S → MAX98357A out), haptics/LED
-- Loads/updates the bounded memory file (encrypted); ephemeral otherwise
-- OTA updates; secure storage for keys + memory
+The on-demand brain: the **provider router** (Tier-1 realtime / Tier-2 composed),
+the **interaction state machine** (Sleep → Connect → Capture → Converse → Forget),
+and the bounded **memory file**. Hardware (modem, audio, camera, wake-island link)
+sits behind traits in `session/src/hal`, with mock implementations so the whole
+loop **builds and runs on your laptop today** — no hardware, no network, no keys.
 
-**References:** [`../docs/ARCHITECTURE.md`](../docs/ARCHITECTURE.md) ·
-[`../docs/PROTOCOL.md`](../docs/PROTOCOL.md) (internal interface) ·
-[`../docs/MEMORY.md`](../docs/MEMORY.md) ·
-[`../docs/PROVISIONING.md`](../docs/PROVISIONING.md) ·
-[`../hardware/BOM.md`](../hardware/BOM.md)
+```sh
+cargo run  --manifest-path session/Cargo.toml    # run the mock interaction loop
+cargo test --manifest-path session/Cargo.toml    # memory-file tests
+```
 
-Status: **not yet scaffolded.**
+Dependency-free for now (std only). Real drivers — an async runtime, a
+WebSocket/WebRTC client to the provider, TLS, and vendor audio/camera libs — plug
+in behind the existing traits. The OpenAI realtime driver stub (with the
+implementation plan) is in `session/src/provider/openai.rs`.
+
+Layout:
+| Path | Job |
+|------|-----|
+| `src/state.rs` | the interaction state machine |
+| `src/provider/` | `Provider`/`Session` traits + drivers (`mock`, `openai` stub) |
+| `src/hal/` | hardware traits (`AudioIn`, `Camera`, `Modem`, …) + mocks |
+| `src/memory.rs` | the bounded memory file (load/save/compact + tests) |
+| `src/config.rs` | device config (provider/model/key handle) |
+
+## `wake-island/` — always-on co-processor (C, nRF52840 / nRF Connect SDK)
+
+Wake-word + button, and power control of the session SoC. Builds against the
+Nordic nRF Connect SDK (Zephyr) — not part of this repo's tooling. Scaffold only.
+
+The interface between the two programs is specified in
+[../docs/PROTOCOL.md](../docs/PROTOCOL.md).

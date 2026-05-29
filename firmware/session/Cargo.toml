@@ -1,0 +1,13 @@
+[package]
+name = "pneuma-session"
+version = "0.1.0"
+edition = "2021"
+description = "Pneuma session brain: provider router + interaction state machine (scaffold)"
+license = "MIT"
+
+# Intentionally dependency-free for now. This scaffold compiles and runs the full
+# interaction loop with a mock HAL + mock provider using only std, so it works on
+# a laptop with no hardware and no network. Real drivers (async runtime,
+# WebSocket/WebRTC, TLS, vendor audio/camera libs) plug in behind the traits in
+# src/provider and src/hal. See README.md.
+[dependencies]
