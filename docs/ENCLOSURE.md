@@ -40,18 +40,34 @@ limit; design for the long-session case anyway.
 
 ## 2. Waterproofing (target IP68)
 
-A printed **silicone gasket** seals the body halves. Three things sealing breaks,
-designed back in:
+A printed **silicone gasket** compressed between **two aluminum shells** seals the
+body (target IP68). Anodize the aluminum (scratch/corrosion); the silicone can
+extend into an external **bumper** for drop protection. Four things sealing
+touches, designed back in:
 
 - **Acoustic membranes** over the mic and speaker (Gore/Saati) — pass sound, block
   water. One also serves as the **pressure-equalization vent** a sealed device
   needs.
-- **Portless charging** — no USB-C (a port is the worst waterproofing weak point,
-  and we need no data port: setup is app-less over BLE/SoftAP). With an **aluminum
-  body, lean magnetic pogo-pin** contacts: Qi won't pass through aluminum (same
-  Faraday issue as the antenna), so wireless would need yet another non-metal
-  window. Pogo removes a hole and avoids that.
-- **Sealed RF window** — the gasket seals *around* the antenna window (§3).
+- **USB-C charging + data** (chosen over portless Qi/pogo): Qi won't pass the
+  aluminum body, and a data port is worth keeping — flashing the Linux SoC,
+  dev/debug, recovery from a bad OTA, and a non-cellular firmware-update path. The
+  cost is that the port is the one genuine waterproofing weak point; solve it the
+  way IP68 phones do — a **gasketed/waterproof USB-C receptacle** sealed to the
+  PCB so water can enter the cavity, drain, and never reach the interior, with the
+  silicone gasket **wrapping the opening**.
+- **RF window = the gasket** — a real **slot/aperture in the aluminum**, filled by
+  the RF-transparent silicone gasket, both seals and lets the antenna radiate
+  through (§3).
+- **LED indicator window** — an *optical* gap: a clear polycarbonate insert or
+  **translucent silicone** over the LED (so the gasket glows), or a sealed
+  light-pipe. Sealed either way.
+
+**Whole-body heat — a thermal-break caveat:** silicone between the two aluminum
+shells is a *thermal break*, so heat strapped to the plateau shell won't flow into
+the other shell on its own. Either **accept it** (with on-demand bursts the
+plateau shell has ample surface — start here) or **bridge it** with a small
+metal-to-metal contact / thermal strap across the gasket at one spot (more sealing
+complexity). Decide from bench data.
 
 (Conduction-only cooling is unaffected by sealing — there's no airflow at this
 scale regardless, so waterproofing doesn't hurt the thermal design.)
@@ -61,10 +77,15 @@ scale regardless, so waterproofing doesn't hurt the thermal design.)
 ## 3. Antenna vs. aluminum body — the central RF tension
 
 **A sealed aluminum body is a Faraday cage; the antenna cannot live inside the
-metal.** The "spot for the antenna" must be a deliberate **non-conductive RF
-window** (plastic/ceramic) in the body, electrically isolated from the aluminum
-(like the plastic antenna breaks in phone metal frames). The silicone gasket seals
-around it.
+metal.** The fix: a real **slot/aperture in the aluminum**, filled by the
+RF-transparent **silicone gasket itself** (one part, two jobs — seal + RF window),
+with the FPC antenna behind it. (Like the plastic antenna breaks in phone metal
+frames.)
+
+**Tuning caveat:** the antenna must be tuned *with the metal aperture present* —
+the surrounding aluminum edges become part of its electrical picture (the slot can
+radiate/detune), so expect an RF simulation-and-tweak pass during bring-up rather
+than dropping in a generic FPC antenna.
 
 **It competes with the thermal radiator for the outward face.** Resolve in 3D:
 - **Aluminum body** = structural mass + radiator (outward + sides).
@@ -111,6 +132,20 @@ on-demand model tolerates it), PCB stacking / flex-rigid, aluminum body as
 structure.
 
 ---
+
+## 5. Attachment / wear mode
+
+The Humane Ai Pin used a **magnetic clamp through fabric**: the Pin on the outside,
+a magnetic piece behind the cloth — either the passive **"Latch"** or the
+**"Battery Booster"** (magnet + battery powering the Pin through the clothing).
+
+**Lesson baked in:** the Booster was an *active, warm* part against the body and
+reviewers found it uncomfortably hot. So if Pneuma goes magnetic, the **skin-side
+piece must be a passive magnet only — never a heat source.** Our layout cooperates
+(heat is in the outward plateau; the skin side is the cool battery slab).
+
+Options: **magnetic clamp** (most "Pneuma," keep the inner piece dumb + cool),
+**lanyard loop**, or a **clip**. Choose during industrial design.
 
 ## Open mechanical items
 
