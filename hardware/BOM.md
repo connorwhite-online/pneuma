@@ -10,6 +10,11 @@ camera. Rationale: [`../docs/ARCHITECTURE.md`](../docs/ARCHITECTURE.md) (ADR-000
 > of 7 enclosure-critical parts** (only the camera and a prototyping carrier need
 > caliper measurement). Verify the camera FFC pin count and the exact USB-C IP
 > suffix on datasheets before ordering.
+>
+> **Links:** Buy/CAD links go to the product page where verified, otherwise a
+> Digi-Key / SnapEDA **search by part number** (always resolves the part) — confirm
+> stock and the exact variant at checkout. The part numbers are the durable
+> reference; URLs drift.
 
 ---
 
@@ -17,22 +22,22 @@ camera. Rationale: [`../docs/ARCHITECTURE.md`](../docs/ARCHITECTURE.md) (ADR-000
 
 | # | Block | Orderable part | Buy at | ~$ | CAD/STEP | Notes |
 |---|-------|----------------|--------|----|----------|-------|
-| 1 | **Cellular modem** | **Quectel EG915U-EU** (Cat-1 bis, LGA-126, 23.6×19.9×2.4 mm) | LCSC `C5248292`, 4gltemall | 8–12 | ✔ SnapEDA (`EG915UEUAB-N05-SNNSA`) | Design part; LGA = **reflow only** (see prototyping path). |
-| 2 | **Session SoC** | **Luckfox Pico Ultra** (RV1106G3, 256 MB, 8 GB eMMC, MIPI-CSI) | luckfox.com, Waveshare | 23–28 | ✔ official wiki `.step` | In stock, single unit. Alt: Pico Max (~$13). |
-| 3 | **Camera** | **SC3336 3MP Module (B)** (MIPI-CSI, F2.0) | luckfox.com | 9 | ✘ measure | Luckfox-native FFC; **confirm 15P vs 20P** against the Ultra connector. |
-| 4 | **Wake-island MCU** | **Raytac MDBT50Q-1MV2** (nRF52840, 10.5×15.5×2.05 mm) | Digi-Key, Adafruit `4078` | 6 | ✔ SnapEDA/UL STEP | nRF52840 does the always-on KWS itself (Syntiant dropped — see gotchas). BLE for setup. |
-| 5 | **Microphone** | **Infineon IM69D130V01XTSA1** (PDM, 4.0×3.0 mm) | Digi-Key | 2–3 | ✔ SnapEDA/UL STEP | Bottom-port; Adafruit `4346` breakout for breadboarding. |
-| 6 | **Audio amp** | **MAX98357A** (bare, or Adafruit `3006`) | Digi-Key / Adafruit | 1–6 | ✔ bare-IC SnapEDA STEP | I2S Class-D. |
-| 7 | **Speaker** | **Same Sky/CUI CES-20134-088PM** (20 mm, 8 Ω, 0.8 W) | Digi-Key | 3–5 | ✔ Same Sky STEP | Fire upward toward the face. |
-| 8 | **Haptic driver** | **DRV2605L** (bare, or Adafruit `2305`) | Digi-Key / Adafruit | 2–8 | ✔ bare-IC SnapEDA STEP | |
-| 9 | **LRA** | **Vybronics VG1040003D** (10×3 mm, Z-axis) | Digi-Key | 3–6 | ✔ Vybronics drawing/STEP | |
-| 10 | **Indicator** | RGB LED (e.g. WS2812B) + optical window | Digi-Key | 0.50 | ✔ generic | Window sealed (§ENCLOSURE). |
-| 11 | **PMIC / power-path** | **TI BQ24074** (bare, 1.5 A power-path) | Digi-Key | 2 | ✔ SnapEDA STEP | Adafruit `4755` to prototype. Step up to **BQ25895** (5 A, I²C) if TX headroom demands. |
-| 12 | **Battery** | **PKCell LP803860** 2000 mAh (8×36×60 mm, JST-PH) | Adafruit `2011` | 12.50 | ✔ datasheet drawing | Standard catalog cell (see §ENCLOSURE for the slab geometry). |
-| 13 | **Waterproof USB-C** | **GCT USB4500-03-1-A** (IP67/68, mid-mount) | Mouser | 1–2 | ✔ GCT STEP | Power **+ data** (flash/dev/recovery). |
-| 14 | **Cellular antenna** | **Taoglas FXUB63.07.0150C** (698–3000 MHz FPC, 96×21×0.2 mm, U.FL) | Digi-Key `931-1329-ND` | 6.50 | ✔ TraceParts STEP | Mounts on an edge behind the gasket RF window. |
-| 15 | **eSIM (MFF2)** | **Soracom** `SGEIL01-01-10` / **sysmocom** sysmoEUICC1 (5×6×0.75 mm) | Soracom store / sysmocom | ~5–10/ea | ✔ std MFF2 footprint | Sold in packs. SGP.32 IoT-eSIM in pre-order. Or a nano-SIM slot to start. |
-| 16 | **Acoustic vents** | **Gore GAW331** (IP67/68) over mic + speaker | Gore sample request | sample | n/a | Generic ePTFE adhesive vent for prototypes. |
+| 1 | **Cellular modem** | **Quectel EG915U-EU** (Cat-1 bis, LGA-126, 23.6×19.9×2.4 mm) | [LCSC `C5248292`](https://jlcpcb.com/partdetail/Quectel-EG915UEU/C5248292) · [4gltemall](https://www.4gltemall.com/quectel-eg915u.html) | 8–12 | [SnapEDA](https://www.snapeda.com/search/?q=EG915U) | Design part; LGA = **reflow only** (see prototyping path). |
+| 2 | **Session SoC** | **Luckfox Pico Ultra** (RV1106G3, 256 MB, 8 GB eMMC, MIPI-CSI) | [Luckfox](https://www.luckfox.com/EN-Luckfox-Pico-Ultra) · [Waveshare](https://www.waveshare.com/luckfox-pico-ultra.htm) | 23–28 | [wiki `.step`](https://wiki.luckfox.com/Luckfox-Pico-RV1106/Downloads/) | In stock, single unit. Alt: Pico Max (~$13). |
+| 3 | **Camera** | **SC3336 3MP Module (B)** (MIPI-CSI, F2.0) | [Waveshare](https://www.waveshare.com/sc3336-3mp-camera-b.htm) · luckfox.com | 9 | ✘ measure | Luckfox-native FFC; **confirm 15P vs 20P** against the Ultra connector. |
+| 4 | **Wake-island MCU** | **Raytac MDBT50Q-1MV2** (nRF52840, 10.5×15.5×2.05 mm) | [Adafruit `4078`](https://www.adafruit.com/product/4078) · [Digi-Key](https://www.digikey.com/en/products/result?keywords=MDBT50Q-1MV2) | 6 | [SnapEDA](https://www.snapeda.com/search/?q=MDBT50Q-1MV2) | nRF52840 does the always-on KWS itself (Syntiant dropped — see gotchas). BLE for setup. |
+| 5 | **Microphone** | **Infineon IM69D130V01XTSA1** (PDM, 4.0×3.0 mm) | [Digi-Key](https://www.digikey.com/en/products/result?keywords=IM69D130V01XTSA1) · breakout [Adafruit `4346`](https://www.adafruit.com/product/4346) | 2–3 | [SnapEDA](https://www.snapeda.com/search/?q=IM69D130) | Bottom-port. |
+| 6 | **Audio amp** | **MAX98357A** (bare, or Adafruit `3006`) | [Adafruit `3006`](https://www.adafruit.com/product/3006) · [Digi-Key](https://www.digikey.com/en/products/result?keywords=MAX98357AETE%2BT) | 1–6 | [SnapEDA](https://www.snapeda.com/search/?q=MAX98357A) | I2S Class-D. |
+| 7 | **Speaker** | **Same Sky/CUI CES-20134-088PM** (20 mm, 8 Ω, 0.8 W) | [Digi-Key](https://www.digikey.com/en/products/result?keywords=CES-20134-088PM) · proto [Adafruit `3923`](https://www.adafruit.com/product/3923) | 3–5 | [Same Sky](https://www.sameskydevices.com) | Fire upward toward the face. |
+| 8 | **Haptic driver** | **DRV2605L** (bare, or Adafruit `2305`) | [Adafruit `2305`](https://www.adafruit.com/product/2305) · [Digi-Key](https://www.digikey.com/en/products/result?keywords=DRV2605LDGSR) | 2–8 | [SnapEDA](https://www.snapeda.com/search/?q=DRV2605L) | |
+| 9 | **LRA** | **Vybronics VG1040003D** (10×3 mm, Z-axis) | [Vybronics](https://www.vybronics.com/coin-vibration-motors/lra/v-g1040003d) · [Digi-Key](https://www.digikey.com/en/products/result?keywords=VG1040003D) | 3–6 | [Vybronics drawing](https://www.vybronics.com/coin-vibration-motors/lra/v-g1040003d) | |
+| 10 | **Indicator** | RGB LED (e.g. WS2812B) + optical window | [Adafruit `1938`](https://www.adafruit.com/product/1938) · [Digi-Key](https://www.digikey.com/en/products/result?keywords=WS2812B) | 0.50 | ✔ generic | Window sealed (§ENCLOSURE). |
+| 11 | **PMIC / power-path** | **TI BQ24074** (bare, 1.5 A power-path) | [Digi-Key](https://www.digikey.com/en/products/result?keywords=BQ24074RGTR) · proto [Adafruit `4755`](https://www.adafruit.com/product/4755) | 2 | [SnapEDA](https://www.snapeda.com/search/?q=BQ24074) | Step up to **BQ25895** (5 A, I²C) if TX headroom demands. |
+| 12 | **Battery** | **PKCell LP803860** 2000 mAh (8×36×60 mm, JST-PH) | [Adafruit `2011`](https://www.adafruit.com/product/2011) | 12.50 | datasheet drawing | Standard catalog cell (see §ENCLOSURE for the slab geometry). |
+| 13 | **Waterproof USB-C** | **GCT USB4500-03-1-A** (IP67/68, mid-mount) | [Digi-Key](https://www.digikey.com/en/products/result?keywords=USB4500-03-1-A) · [GCT](https://gct.co) | 1–2 | [GCT STEP](https://gct.co) | Power **+ data**. Verified IP67 alt: GCT USB4715 ([Mouser](https://www.mouser.com/ProductDetail/GCT/USB4715-GF-A?qs=vvQtp7zwQdPhXuRDaiXpdQ%3D%3D), [STEP](https://gct.co/connector/usb4715)). |
+| 14 | **Cellular antenna** | **Taoglas FXUB63.07.0150C** (698–3000 MHz FPC, 96×21×0.2 mm, U.FL) + U.FL pigtail | [Digi-Key `931-1329-ND`](https://www.digikey.com/en/products/result?keywords=FXUB63.07.0150C) · pigtail [Adafruit `852`](https://www.adafruit.com/product/852) | 6.50 | [TraceParts STEP](https://www.traceparts.com/en/product/taoglas-fxub63-5g4g-flex-antenna-150mm-o137-ipex-mhfr-i-ufl?Product=90-17062020-037047) | Edge-mount behind the gasket RF window. |
+| 15 | **eSIM (MFF2)** | **Soracom** `SGEIL01-01-10` / **sysmocom** sysmoEUICC1 (5×6×0.75 mm) | [Soracom](https://store.soracom.io/) · [sysmocom](https://shop.sysmocom.de/) · removable: [Hologram](https://www.sparkfun.com/hologram-euicc-sim-card.html) | ~5–10/ea | ✔ std MFF2 footprint | Sold in packs. Start with a removable Hologram eUICC or a nano-SIM slot. |
+| 16 | **Acoustic vents** | **Gore GAW331** (IP67/68) over mic + speaker | [Gore](https://www.gore.com/products/categories/venting) (sample) | sample | n/a | MOQ/sample-gated; generic ePTFE adhesive vent for prototypes. |
 | 17 | **Thermal** | aluminum unibody + graphite spreader + TIM pads (modem PA & SoC) + skin-side insulator | Digi-Key (TIM) / fab | 3–8 | — | Body *is* the heat exchanger (ADR-0006/0007). |
 | 18 | **Waterproof seal** | printed **silicone gasket** (seal + RF window + LED window) | fab / cast | 1 | — | Target IP68; two anodized aluminum shells. |
 | 19 | **Attachment** | magnet clamp (passive skin-side) / lanyard / clip | — | 1–3 | — | Skin-side piece stays passive + cool (Ai Pin lesson). |
@@ -41,9 +46,11 @@ Indicative core electronics cost (qty 1, ex-PCB/enclosure): **~$90–130**, domi
 by the SoC board, modem, and battery.
 
 ### Prototyping path (before a custom PCB)
-- **Cellular without reflow:** **LilyGO T-A7670G R2** (SIMCom A7670 Cat-1 + SIM
-  slot + USB + charger), ~$18–23 — get the cellular link working, then move to a
-  bare EG915U on your own PCB (its SnapEDA STEP gives the pad layout).
+- **Cellular without reflow:** [**LilyGO T-A7670G R2**](https://lilygo.cc) (SIMCom
+  A7670 Cat-1 + SIM slot + USB + charger), ~$18–23, or the
+  [Waveshare SIM7670G Cat-1 HAT](https://www.waveshare.com/sim7670g-lte-cat-1-gnss-hat.htm)
+  (~$28) — get the cellular link working, then move to a bare EG915U on your own
+  PCB ([its SnapEDA footprint](https://www.snapeda.com/search/?q=EG915U) gives the pads).
 - **Brain:** Luckfox Pico Ultra + SC3336 camera (both Luckfox-native, plug in).
 - **Breadboard the rest:** Adafruit breakouts for the mic (`4346`), amp (`3006`),
   haptics (`2305`), charger (`4755`) — solder later.
