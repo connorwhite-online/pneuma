@@ -46,12 +46,17 @@ Indicative core electronics cost (qty 1, ex-PCB/enclosure): **~$90–130**, domi
 by the SoC board, modem, and battery.
 
 ### Prototyping path (before a custom PCB)
+- **Brain — don't buy the $25 Ultra to start.** The session app already builds +
+  runs on your **laptop** (mocks, no hardware). When you need to validate real
+  camera/audio/modem I/O on Linux, use a **Raspberry Pi you may already own** (Zero
+  2 W ~$15: CSI camera + USB modem + audio + runs the Rust binary), or the **base
+  [Luckfox Pico](https://www.luckfox.com/Luckfox-Pico) (~$8)** for RV1106-native
+  bring-up. Reserve the RV1106 for the custom PCB (it's a bare chip there anyway).
 - **Cellular without reflow:** [**LilyGO T-A7670G R2**](https://lilygo.cc) (SIMCom
   A7670 Cat-1 + SIM slot + USB + charger), ~$18–23, or the
   [Waveshare SIM7670G Cat-1 HAT](https://www.waveshare.com/sim7670g-lte-cat-1-gnss-hat.htm)
   (~$28) — get the cellular link working, then move to a bare EG915U on your own
   PCB ([its SnapEDA footprint](https://www.snapeda.com/search/?q=EG915U) gives the pads).
-- **Brain:** Luckfox Pico Ultra + SC3336 camera (both Luckfox-native, plug in).
 - **Breadboard the rest:** Adafruit breakouts for the mic (`4346`), amp (`3006`),
   haptics (`2305`), charger (`4755`) — solder later.
 

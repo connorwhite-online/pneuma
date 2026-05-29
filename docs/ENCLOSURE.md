@@ -103,6 +103,17 @@ allows this), giving an ~85×15 mm RF window. Going to ~40 mm is only OK if you
 deliberately drop the 700 MHz band (acceptable on mid-band-only carriers, worse for
 rural/indoor).
 
+**Antenna technology — flex now, LDS/frame later.** The Molex adhesive flex is the
+*prototype* antenna (cheap, no tooling, on-air in a day; a 0.1 mm ribbon that hides
+along an edge). Polished small wearables/smartwatches instead use an **LDS antenna**
+(RF traces lasered onto a plastic carrier or the enclosure — compact, 3D-conformal,
+tunable, needs a vendor + volume; the smartwatch-class standard, almost certainly the
+Ai-Pin approach). Phones use the **metal frame itself as the antenna** (slots fed
+directly). Since Pneuma already has an aluminum body, a **frame/slot antenna is worth
+exploring** as an alternative to the RF-window approach. Both are advanced RF needing
+a tuning pass — so **start on the flex, move to LDS or a frame antenna** when you tune
+the enclosure.
+
 ---
 
 ## 4. Form factor & size — thin slab + plateau (iPhone-Air-style)
