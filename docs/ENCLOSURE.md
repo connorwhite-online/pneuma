@@ -95,6 +95,14 @@ than dropping in a generic FPC antenna.
 
 Get these two zones not overlapping/fighting and the layout resolves.
 
+**Antenna size reality (don't go too small).** LTE's 700 MHz low band needs
+electrical length, so a tiny antenna can't radiate it — the smallest credible
+*full-band* LTE flex is **~85 mm** (BOM: Molex 2091420180, 85×14.5 mm). It fits the
+80 mm body by running along a long edge and **bending ~10 mm up the end wall** (flex
+allows this), giving an ~85×15 mm RF window. Going to ~40 mm is only OK if you
+deliberately drop the 700 MHz band (acceptable on mid-band-only carriers, worse for
+rural/indoor).
+
 ---
 
 ## 4. Form factor & size — thin slab + plateau (iPhone-Air-style)
@@ -147,7 +155,7 @@ final CAD. Every opening must be sealed by its matching method.
 |---|---|---|---|
 | **USB-C** | mouth ~9.0 × 3.3 mm; plug recess ~12 × 7 mm | connector IP67 flange + gasket | Thin wall (≤~2 mm) / counterbore so the cable overmold seats. GCT USB4500 datasheet is authoritative. |
 | **Camera** | ~6 mm Ø aperture; clear window ~8 mm Ø | sealed clear window (sapphire/PC) | Clears SC3336 lens + ~98° FOV; chamfer inner edge to avoid vignetting. |
-| **Antenna** | non-metal RF window ≥ antenna footprint + ~3 mm keepout | gasket fills it (RF-transparent) | ⚠ antenna must be sized to fit (see below). |
+| **Antenna** | ~85×15 mm RF window (Molex 2091420180 footprint + ~3 mm) along a long edge | gasket fills it (RF-transparent) | Flex bends up the end wall to fit 80 mm (§3). |
 | **LED** | ~3 mm Ø window (or 1.5–2 mm light-pipe) | clear/translucent insert or translucent silicone | Light-pipe keeps the LED off the surface. |
 | **Mic** | ~1.0 mm Ø port | waterproof acoustic membrane | Membrane also serves as the pressure-equalization vent. |
 | **Speaker** | grille ~5–9 × 1.0–1.5 mm holes (or ~10 mm slotted) | acoustic membrane behind grille | Many small holes seal better than one big hole. |
@@ -173,9 +181,8 @@ Options: **magnetic clamp** (most "Pneuma," keep the inner piece dumb + cool),
 
 - [ ] Thermal mock-up: skin-side temp during a sustained session; size the TIM +
       graphite + Al mass; pick the skin-side insulator.
-- [ ] **Pick a smaller antenna that fits.** The BOM's Taoglas FXUB63 is ~96×21 mm —
-      longer than the 80 mm body. Select a ~40×10 mm-class LTE FPC antenna, then size
-      the RF window to its footprint + ~3 mm keepout.
+- [ ] Lay out the antenna (Molex 2091420180, ~85×14.5 mm) along a long edge with
+      the flex bent up the end wall; confirm the ~85×15 mm RF window placement.
 - [ ] RF window material + placement; antenna efficiency/SAR with the metal body
       present; confirm no thermal/antenna face conflict.
 - [ ] Seal the USB-C interface: gasketed IP67 receptacle + panel-cutout per the GCT
