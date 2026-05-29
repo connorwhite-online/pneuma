@@ -83,4 +83,4 @@ full BOM: [`hardware/BOM.md`](hardware/BOM.md); rationale in ADR-0001/0006/0007.
 
 ## License
 
-Intended to be fully open source (license TBD — leaning permissive, e.g. MIT).
+[MIT](LICENSE) — fully open. Build it, fork it, sell it; just keep the notice.
