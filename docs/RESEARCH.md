@@ -370,6 +370,45 @@ differentiator. `[high that it exists; deferred]`
 
 ---
 
+## 7. Humane Ai Pin teardown (reference)
+
+The Ai Pin is the only shipped standalone-cellular screenless AI wearable, so its
+teardown (iFixit) is our closest reference for the standalone-cellular build in
+ARCHITECTURE ADR-0001/0007. (Note: §2 and §6 above predate the standalone-cellular
+pivot and assumed a phone-tethered nRF/ESP32 core — superseded.)
+
+**Silicon (from board photos):**
+- **Qualcomm SM7125 (Snapdragon 720G)** — a full phone-class application processor.
+- **Kingston eMCP** (LPDDR4X + eMMC in one package) beside the SoC.
+- Discrete RF chain: **Qualcomm SDR675** transceiver + **Qualcomm PM6350** PMIC +
+  **Skyworks SKY5-series front-end module(s)**.
+
+**Lessons (all reinforce our choices):**
+- They built *a phone*: AP + eMCP + a multi-chip discrete RF chain, no real heat
+  path → the documented overheating/short battery. `[high]`
+- **A cellular module collapses that RF chain into one shielded can** — the Quectel
+  EG915U integrates what Humane spread across SDR675 + PM6350 + Skyworks FEMs. This
+  is the core reason we use a module, not discrete RF. `[high]`
+- They threw heavy *local* compute at it; the iFixit caption notes these can't run
+  a localized AI at this size. We offload AI to the cloud and run a modest SoC
+  **on-demand** — the thermal headroom they never had. `[high]`
+
+**Construction (confirms our layout):**
+- A **multi-board stack** (small curved board + main board) joined by **board-to-board
+  + FFC connectors** — exactly the slab+plateau two-board plan.
+- A **grid of gold pads** = the magnetic booster/charging contact array (their
+  "portless power").
+
+**Antenna:** no large FPC element visible on either PCB face — only peripheral
+contact pads, consistent with an antenna on the housing (**LDS/chassis-fed**), not a
+board-mounted flex. Supports "LDS/integrated for the product" (ENCLOSURE §3).
+`[med — inferred from photos, not confirmed]`
+
+Source: iFixit Humane AI Pin teardown / Chip ID
+(https://www.ifixit.com/Guide/Humane+AI+Pin+Chip+ID/172518).
+
+---
+
 ## Method & caveats
 
 - Research conducted via parallel multi-source web search + fetch, May 2026.

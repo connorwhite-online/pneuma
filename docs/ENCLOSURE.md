@@ -103,16 +103,29 @@ allows this), giving an ~85×15 mm RF window. Going to ~40 mm is only OK if you
 deliberately drop the 700 MHz band (acceptable on mid-band-only carriers, worse for
 rural/indoor).
 
-**Antenna technology — flex now, LDS/frame later.** The Molex adhesive flex is the
-*prototype* antenna (cheap, no tooling, on-air in a day; a 0.1 mm ribbon that hides
-along an edge). Polished small wearables/smartwatches instead use an **LDS antenna**
-(RF traces lasered onto a plastic carrier or the enclosure — compact, 3D-conformal,
-tunable, needs a vendor + volume; the smartwatch-class standard, almost certainly the
-Ai-Pin approach). Phones use the **metal frame itself as the antenna** (slots fed
-directly). Since Pneuma already has an aluminum body, a **frame/slot antenna is worth
-exploring** as an alternative to the RF-window approach. Both are advanced RF needing
-a tuning pass — so **start on the flex, move to LDS or a frame antenna** when you tune
-the enclosure.
+**Antenna technology — and how hard the "frame antenna" really is.** The Molex
+adhesive flex is the *prototype* antenna (cheap, no tooling, on-air in a day; a
+0.1 mm ribbon that hides along an edge). The product-grade options, easiest → hardest:
+
+1. **Flex (FPC)** behind the non-metal RF window — prototype + early product; tune
+   empirically with a VNA.
+2. **Ground-plane-coupled chip antenna** (e.g. Ignion "Virtual Antenna" / mXTEND, or
+   Taoglas/Antenova with their tuning service) — tiny standard SMD that uses the PCB
+   ground as part of the radiator; the vendor helps tune. *Near-frame performance
+   without DIY chassis RF — the recommended "integrated" step.*
+3. **LDS antenna** lasered onto a plastic carrier / the window insert — the
+   smartwatch standard; needs a vendor + volume.
+4. **Hybrid frame** — keep the body grounded as the heat spreader, but isolate **one
+   plastic-broken segment** of the frame as the radiator, fed by a flex. Many
+   products that *look* like frame antennas are actually this.
+5. **Full metal-frame/slot antenna** (phone-style) — the **hardest** option:
+   slot + feed + matching network + EM simulation (HFSS/CST) + anechoic-chamber
+   tuning, tightly coupled to frozen mechanics, with body-proximity detuning and
+   SAR complications on the surface you touch. *Endgame only, with an RF engineer —
+   not a prototype or DIY-blind path.*
+
+So: **ship on flex; if you want the integrated look, hire the tuning out** (a
+ground-coupled chip or LDS) rather than hand-rolling a chassis antenna.
 
 ---
 
