@@ -72,15 +72,26 @@ Get these two zones not overlapping/fighting and the layout resolves.
 
 ---
 
-## 4. Size — honest floor
+## 4. Size — target envelope
 
-With a Linux SoC + Cat-1 bis modem (~24×20 mm) + camera + ~500 mAh cell + aluminum
-body, the realistic size is **small-puck / Ai-Pin territory** (think "large coin,"
-not "shirt button"). The modem and battery set the floor.
+**Target: ~40 × 80 × 20 mm (≈ 64 cm³)** — roughly a bit smaller than a deck of
+cards. This is *roomy*, well above the parts' minimum, and the slack is useful:
 
-Levers: **iSIM** (no SIM tray), the on-demand model permitting a **smaller
-battery**, PCB stacking / flex-rigid, and using the aluminum body as structure
-(no separate frame).
+- **Fits easily.** The space drivers (modem 24×20×2.4 mm, battery) are nowhere near
+  tight in 64 cm³.
+- **Big battery.** A ~2000–2500 mAh cell fits comfortably → ~10 h+ continuous talk,
+  multi-day on the on-demand model. (The runtime worry goes away at this size.)
+- **Thermal headroom.** ~112 cm² of outer surface + room for real aluminum mass →
+  the skin-temp limit is comfortable, not marginal. This is the envelope where the
+  heat-exchanger plan clearly works.
+
+**Wearability flag:** 20 mm is chunky against the chest (the Ai Pin was ~8 mm); the
+40×80 footprint is fine. Plan: build the first mock-up at the full 20 mm (big
+battery + thermal mass, prove it out), then **diet toward ~10–14 mm** later by
+shrinking the battery — the on-demand model tolerates it.
+
+Levers for slimming later: **iSIM** (no SIM tray), smaller battery, PCB stacking /
+flex-rigid, aluminum body as structure (no separate frame).
 
 ---
 
