@@ -116,10 +116,10 @@ zones:
 - **Plateau / bump (outward):** camera (lens depth), speaker (~3–5 mm cavity), SoC,
   modem — the parts that need vertical room.
 
-**Battery dimensioning** (the slab is the battery): a LiPo pouch of roughly
-**5–7 mm × ~36 × ~72 mm** (≈ usable footprint less ~2 mm walls) yields
-**~2,000–2,500 mAh** at commodity density (~130–160 mAh/cm³). A ~6 mm cell → thin
-section ≈ 8–10 mm (battery + walls + PCB).
+**Battery dimensioning** (the slab is the battery): the standard off-the-shelf cell
+is **~8 × 36 × 60 mm / 2,000 mAh** (e.g. PKCell LP803860, single-unit orderable) →
+thin section ≈ 10–11 mm. A thinner/longer cell (~5–7 × 36 × ~72 mm, same ~2,000–
+2,500 mAh) is a **custom/volume** option if you want to slim the slab further.
 
 **Thermal payoff:** put the hot parts (**modem PA + SoC**) in the **outward
 aluminum plateau** → the bump radiates *away from the body* while the cool battery

@@ -3,42 +3,63 @@
 Hardware for the **standalone cellular** Pneuma device: an always-on **wake-island
 MCU** that powers an on-demand **Linux session SoC** + **LTE Cat-1 bis modem** +
 camera. Rationale: [`../docs/ARCHITECTURE.md`](../docs/ARCHITECTURE.md) (ADR-0001,
--0006); evidence: [`../docs/RESEARCH.md`](../docs/RESEARCH.md).
+-0006, -0007); evidence: [`../docs/RESEARCH.md`](../docs/RESEARCH.md).
 
-> **Altitude note.** Block-level BOM + interconnect — enough to order parts and
-> prototype, and to structure the firmware. Not a schematic: exact passives, PMIC
-> rails, RF matching/antenna, thermal stackup, and mechanical come after bench
-> validation. Prices are rough, one-off.
+> **Sourcing status (verified 2026-05).** Every line below is single-unit
+> orderable by a solo maker. Prices are ~qty-1 USD, ±20%. **STEP/CAD found for 5
+> of 7 enclosure-critical parts** (only the camera and a prototyping carrier need
+> caliper measurement). Verify the camera FFC pin count and the exact USB-C IP
+> suffix on datasheets before ordering.
 
 ---
 
-## 1. Bill of materials
+## 1. Bill of materials (buildable)
 
-| # | Block | Recommended part | ~Price | Notes / alternates |
-|---|-------|------------------|--------|--------------------|
-| 1 | **Wake island MCU** | Nordic **nRF52840** module | ~$5 | Always-on KWS + button + power control + BLE (setup). Alt: **Syntiant NDP120** (<1 mW KWS + beamforming) as a front-end. |
-| 2 | **Session SoC** | Rockchip **RV1106(G3)** (Cortex-A7 + ISP + ~0.5–1 TOPS NPU) | ~$8–12 | Tiny Linux; native MIPI camera ISP + HW JPEG. Alt: Allwinner V851S, NXP i.MX 8M (more power/heat). |
-| 3 | **Cellular modem** | Quectel **EG915U** (LTE Cat-1 bis, ~24×20×2.4 mm) | ~$8–15 | Single antenna, full-duplex, data-only (voice-over-data). Alt: Sequans Calliope 2, Telit ELS63. |
-| 4 | **Camera** | small **MIPI-CSI** sensor (e.g. OV/GC 2–5 MP) via RV1106 ISP | ~$3–8 | On-demand single JPEG; power-gated off otherwise. |
-| 5 | **Microphone** | Infineon **IM69D130** (PDM MEMS) | ~$3 | Monitored by wake island for KWS; routed to SoC in session. |
-| 6 | **Audio amp** | **MAX98357A** (I2S Class-D) | ~$6 | Driven by SoC I2S during sessions. |
-| 7 | **Speaker** | 20 mm 8 Ω ~1 W | ~$2 | Fire upward toward the face. |
-| 8 | **Haptics** | LRA + **DRV2605L** | ~$4 | State cues. |
-| 9 | **Indicator** | RGB LED (or WS2812) + optical window (clear PC / translucent silicone / light-pipe) | ~$0.50 | + earcons. Window is sealed (§ENCLOSURE). |
-| 10 | **Button** | momentary tactile | ~$0.20 | To wake island (wake / push-to-talk / power). |
-| 11 | **SIM** | **SGP.32 eSIM** or on-die **iSIM** | ~$1–3 | Remote-provisionable, no UI. iSIM (e.g. Sony ALT-class) saves most space. |
-| 12 | **PMIC / power-path** | power-path charger+regulator (e.g. TI BQ25xxx; or RV1106 ref PMIC) | ~$2–4 | Holds system rail up during modem TX while cell sags. |
-| 13 | **Bulk cap** | 100–470 µF low-ESR + MLCC array at modem VBAT | ~$1 | LTE = steady draw, no 2G spikes → no supercap needed. |
-| 14 | **Battery** | LiPo pouch ~**5–7 × 36 × 72 mm → ~2000–2500 mAh** (forms the thin slab) | ~$6–10 | ~10 h+ talk / multi-day on-demand. Shrink later if slimming thickness. |
-| 15 | **Charging + data** | **waterproof USB-C** receptacle (gasket-sealed to PCB) | ~$1–3 | Power + data: flashing, dev/debug, OTA recovery. Sealed IP68-phone-style; gasket wraps the opening. |
-| 16 | **Thermal** | **aluminum unibody** (radiator) + TIM/pads on modem PA & SoC + graphite spreader + skin-side insulator | ~$3–8 | Body *is* the heat exchanger (ADR-0006/0007). Strap the 2 hot parts only. |
-| 17 | **Antenna** | FPC PIFA (LTE) behind a **non-conductive RF window**, isolated from the aluminum, edge-placed away from body | ~$1 | Metal body = Faraday cage; the window is mandatory (ADR-0007). |
-| 18 | **Waterproof seal** | printed **silicone gasket** | ~$1 | Seals body halves + around RF window; target IP68. |
-| 19 | **Acoustic membranes** | Gore/Saati waterproof vents over mic + speaker | ~$1–2 | Pass sound, block water; one doubles as pressure-equalization vent. |
-| 20 | **Attachment** | magnet clamp (passive skin-side) / lanyard / clip | ~$1–3 | Skin-side piece must stay passive + cool (Ai Pin lesson). |
+| # | Block | Orderable part | Buy at | ~$ | CAD/STEP | Notes |
+|---|-------|----------------|--------|----|----------|-------|
+| 1 | **Cellular modem** | **Quectel EG915U-EU** (Cat-1 bis, LGA-126, 23.6×19.9×2.4 mm) | LCSC `C5248292`, 4gltemall | 8–12 | ✔ SnapEDA (`EG915UEUAB-N05-SNNSA`) | Design part; LGA = **reflow only** (see prototyping path). |
+| 2 | **Session SoC** | **Luckfox Pico Ultra** (RV1106G3, 256 MB, 8 GB eMMC, MIPI-CSI) | luckfox.com, Waveshare | 23–28 | ✔ official wiki `.step` | In stock, single unit. Alt: Pico Max (~$13). |
+| 3 | **Camera** | **SC3336 3MP Module (B)** (MIPI-CSI, F2.0) | luckfox.com | 9 | ✘ measure | Luckfox-native FFC; **confirm 15P vs 20P** against the Ultra connector. |
+| 4 | **Wake-island MCU** | **Raytac MDBT50Q-1MV2** (nRF52840, 10.5×15.5×2.05 mm) | Digi-Key, Adafruit `4078` | 6 | ✔ SnapEDA/UL STEP | nRF52840 does the always-on KWS itself (Syntiant dropped — see gotchas). BLE for setup. |
+| 5 | **Microphone** | **Infineon IM69D130V01XTSA1** (PDM, 4.0×3.0 mm) | Digi-Key | 2–3 | ✔ SnapEDA/UL STEP | Bottom-port; Adafruit `4346` breakout for breadboarding. |
+| 6 | **Audio amp** | **MAX98357A** (bare, or Adafruit `3006`) | Digi-Key / Adafruit | 1–6 | ✔ bare-IC SnapEDA STEP | I2S Class-D. |
+| 7 | **Speaker** | **Same Sky/CUI CES-20134-088PM** (20 mm, 8 Ω, 0.8 W) | Digi-Key | 3–5 | ✔ Same Sky STEP | Fire upward toward the face. |
+| 8 | **Haptic driver** | **DRV2605L** (bare, or Adafruit `2305`) | Digi-Key / Adafruit | 2–8 | ✔ bare-IC SnapEDA STEP | |
+| 9 | **LRA** | **Vybronics VG1040003D** (10×3 mm, Z-axis) | Digi-Key | 3–6 | ✔ Vybronics drawing/STEP | |
+| 10 | **Indicator** | RGB LED (e.g. WS2812B) + optical window | Digi-Key | 0.50 | ✔ generic | Window sealed (§ENCLOSURE). |
+| 11 | **PMIC / power-path** | **TI BQ24074** (bare, 1.5 A power-path) | Digi-Key | 2 | ✔ SnapEDA STEP | Adafruit `4755` to prototype. Step up to **BQ25895** (5 A, I²C) if TX headroom demands. |
+| 12 | **Battery** | **PKCell LP803860** 2000 mAh (8×36×60 mm, JST-PH) | Adafruit `2011` | 12.50 | ✔ datasheet drawing | Standard catalog cell (see §ENCLOSURE for the slab geometry). |
+| 13 | **Waterproof USB-C** | **GCT USB4500-03-1-A** (IP67/68, mid-mount) | Mouser | 1–2 | ✔ GCT STEP | Power **+ data** (flash/dev/recovery). |
+| 14 | **Cellular antenna** | **Taoglas FXUB63.07.0150C** (698–3000 MHz FPC, 96×21×0.2 mm, U.FL) | Digi-Key `931-1329-ND` | 6.50 | ✔ TraceParts STEP | Mounts on an edge behind the gasket RF window. |
+| 15 | **eSIM (MFF2)** | **Soracom** `SGEIL01-01-10` / **sysmocom** sysmoEUICC1 (5×6×0.75 mm) | Soracom store / sysmocom | ~5–10/ea | ✔ std MFF2 footprint | Sold in packs. SGP.32 IoT-eSIM in pre-order. Or a nano-SIM slot to start. |
+| 16 | **Acoustic vents** | **Gore GAW331** (IP67/68) over mic + speaker | Gore sample request | sample | n/a | Generic ePTFE adhesive vent for prototypes. |
+| 17 | **Thermal** | aluminum unibody + graphite spreader + TIM pads (modem PA & SoC) + skin-side insulator | Digi-Key (TIM) / fab | 3–8 | — | Body *is* the heat exchanger (ADR-0006/0007). |
+| 18 | **Waterproof seal** | printed **silicone gasket** (seal + RF window + LED window) | fab / cast | 1 | — | Target IP68; two anodized aluminum shells. |
+| 19 | **Attachment** | magnet clamp (passive skin-side) / lanyard / clip | — | 1–3 | — | Skin-side piece stays passive + cool (Ai Pin lesson). |
 
-Indicative core cost (one-off, ex-PCB/enclosure): **~$60–100**, dominated by SoC,
-modem, and camera.
+Indicative core electronics cost (qty 1, ex-PCB/enclosure): **~$90–130**, dominated
+by the SoC board, modem, and battery.
+
+### Prototyping path (before a custom PCB)
+- **Cellular without reflow:** **LilyGO T-A7670G R2** (SIMCom A7670 Cat-1 + SIM
+  slot + USB + charger), ~$18–23 — get the cellular link working, then move to a
+  bare EG915U on your own PCB (its SnapEDA STEP gives the pad layout).
+- **Brain:** Luckfox Pico Ultra + SC3336 camera (both Luckfox-native, plug in).
+- **Breadboard the rest:** Adafruit breakouts for the mic (`4346`), amp (`3006`),
+  haptics (`2305`), charger (`4755`) — solder later.
+
+### Sourcing gotchas + workarounds
+- **EG915U is reflow-only** (LGA-126). Prototype on the LilyGO A7670 board; reflow
+  the EG915U at home with a stencil + hotplate for the final build.
+- **Syntiant NDP120 isn't buyable bare** (NDA/volume). Workaround: **drop it** —
+  the nRF52840 alone handles always-on wake-word. (Arduino Nicla Voice carries an
+  NDP120 if you ever want the ultra-low-power KWS path.)
+- **eSIM has no clean single-unit** — buy a Soracom/sysmocom 10-pack, or start with
+  a nano-SIM slot.
+- **Gore vents aren't on distributors** — request samples, or use a generic ePTFE
+  vent for prototypes.
+- **No vendor STEP** for the SC3336 camera or LilyGO carrier — measure with calipers
+  (both are simple rectangular boards).
 
 ---
 
@@ -91,18 +112,19 @@ modem, and camera.
   bursts + passive graphite/Cu spreading to an outward face + skin-side insulation.
 - LTE draws steadily during a session (no 2 G micro-spikes) → single LiPo + bulk
   cap + power-path PMIC; no supercap required.
-- Runtime: ~1–3 h continuous talk; all-day on the on-demand burst model.
+- Runtime: ~10 h+ continuous talk on a 2000 mAh cell; multi-day on the on-demand
+  burst model.
 
 ---
 
 ## 4. Open items before schematic capture
 
-- [ ] Confirm session SoC (RV1106 vs Allwinner V vs i.MX 8M) against the realtime
+- [ ] Confirm session SoC (Luckfox Pico Ultra / RV1106) against the realtime
       WebRTC/TLS + camera workload and its idle/boot-time power.
 - [ ] Validate wake-island → SoC cold-boot/resume latency (affects "feel").
 - [ ] Bench modem TX current + needed bulk capacitance on the chosen cell.
-- [ ] Thermal mock-up: measure skin-side temp during a sustained session; size the
+- [ ] Thermal mock-up: skin-side temp during a sustained session; size the
       graphite spreader; resolve antenna-vs-spreader contention for the outer face.
-- [ ] eSIM (SGP.32) vs iSIM module selection + data provider (Soracom/Hologram).
-- [ ] Camera sensor + lens choice (and default resolution/quality for transfer size).
+- [ ] Confirm SC3336 FFC pin count + GCT USB-C IP suffix on datasheets.
+- [ ] eSIM (Soracom/SGP.32) provisioning + data plan.
 - [ ] Secure storage for keys + memory file (SoC secure boot / encrypted flash).

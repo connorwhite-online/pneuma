@@ -4,6 +4,7 @@
 //! runs two simulated wake events (a voice query and a visual query) so you can
 //! watch the full Sleep → Connect → Capture → Converse → Forget loop, and see
 //! the memory file persist across interactions. Runs on a laptop, no hardware.
+#![allow(dead_code)] // scaffold: the full trait/enum surface is exercised by real drivers + tests, not the mock happy-path
 
 mod config;
 mod hal;
