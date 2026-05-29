@@ -29,6 +29,7 @@ impl Provider for MockProvider {
                 tx,
                 audio_bytes: 0,
                 images: 0,
+                tools_used: false,
             }),
             rx,
         ))
@@ -39,6 +40,7 @@ struct MockSession {
     tx: mpsc::Sender<SessionEvent>,
     audio_bytes: usize,
     images: usize,
+    tools_used: bool,
 }
 
 impl Session for MockSession {
@@ -64,11 +66,29 @@ impl Session for MockSession {
             let _ = self
                 .tx
                 .send(SessionEvent::MemoryUpdate(MemoryOp::Remember("Drinks coffee".to_string())));
+            let _ = self.tx.send(SessionEvent::TurnComplete);
+        } else if !self.tools_used {
+            // First voice turn: demonstrate a tool round-trip. We ask for a tool
+            // and DON'T complete the turn — we wait for `push_tool_result`.
+            self.tools_used = true;
+            let _ = self.tx.send(SessionEvent::ToolCall {
+                name: "get_time".to_string(),
+                args: "{}".to_string(),
+            });
         } else {
             let _ = self
                 .tx
-                .send(SessionEvent::AudioReply(b"Hi Connor, how can I help?".to_vec()));
+                .send(SessionEvent::AudioReply(b"Anything else?".to_vec()));
+            let _ = self.tx.send(SessionEvent::TurnComplete);
         }
+        Ok(())
+    }
+
+    fn push_tool_result(&mut self, _name: &str, result: String) -> Result<(), ProviderError> {
+        // The model now has the tool result and finishes the turn.
+        let _ = self.tx.send(SessionEvent::AudioReply(
+            format!("Got it ({result}). Hi Connor, how can I help?").into_bytes(),
+        ));
         let _ = self.tx.send(SessionEvent::TurnComplete);
         Ok(())
     }

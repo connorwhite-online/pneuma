@@ -10,6 +10,7 @@ use crate::config::DeviceConfig;
 use crate::hal::{AudioIn, AudioOut, Camera, Modem, WakeReason};
 use crate::memory::Memory;
 use crate::provider::{MemoryOp, Provider, SessionEvent, SessionOpts};
+use crate::tool::ToolRegistry;
 
 const SYSTEM_PROMPT: &str = "You are Pneuma, a concise, warm voice companion. \
 Answer briefly. Use the user's memory for context. Only mention what you see when asked.";
@@ -32,6 +33,7 @@ pub struct Pneuma {
     memory: Memory,
     memory_path: PathBuf,
     config: DeviceConfig,
+    tools: ToolRegistry,
 }
 
 impl Pneuma {
@@ -55,6 +57,7 @@ impl Pneuma {
             memory,
             memory_path,
             config,
+            tools: crate::tool::default_registry(),
         }
     }
 
@@ -113,7 +116,12 @@ impl Pneuma {
                         println!("  [memory] proposed: {op:?}");
                         pending.push(op);
                     }
-                    SessionEvent::ToolCall { name, args } => println!("  [tool] {name}({args})"),
+                    SessionEvent::ToolCall { name, args } => {
+                        println!("  [tool] {name}({args})");
+                        let result = self.tools.run(&name, &args);
+                        println!("  [tool] → {result}");
+                        session.push_tool_result(&name, result)?;
+                    }
                     SessionEvent::TurnComplete => break,
                     SessionEvent::Error(e) => {
                         eprintln!("  [error] {e}");

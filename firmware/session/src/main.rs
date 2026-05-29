@@ -14,6 +14,7 @@ mod memory;
 mod provider;
 mod secure;
 mod state;
+mod tool;
 
 use std::path::Path;
 

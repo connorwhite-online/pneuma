@@ -106,6 +106,11 @@ pub trait Session: Send {
     fn push_image(&mut self, frame: ImageFrame) -> Result<(), ProviderError>;
     /// Signal the end of the user's turn (e.g. on detected silence).
     fn end_turn(&mut self) -> Result<(), ProviderError>;
+    /// Hand back the result of a tool the model asked for, so it can continue the
+    /// turn. Default: no-op (providers that don't request tools ignore it).
+    fn push_tool_result(&mut self, _name: &str, _result: String) -> Result<(), ProviderError> {
+        Ok(())
+    }
     /// Close the session and release resources.
     fn close(&mut self);
 }

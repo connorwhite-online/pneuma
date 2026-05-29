@@ -27,6 +27,7 @@ Layout:
 | `src/provider/` | `Provider`/`Session` traits, `build()` router, Tier-1 (`mock`, `openai` stub) + Tier-2 `composed` (STT→LLM→TTS) |
 | `src/hal/` | hardware traits (`AudioIn`+VAD, `Camera`, `Modem`, …) + mocks |
 | `src/memory.rs` | the bounded memory file (load/save/compact + tests) |
+| `src/tool.rs` | tool calling (MCP-style): `Tool` trait + registry + round-trip |
 | `src/secure.rs` | `KeyStore` — resolves the API key from secure storage |
 | `src/config.rs` | device config (provider/model/key handle) |
 
