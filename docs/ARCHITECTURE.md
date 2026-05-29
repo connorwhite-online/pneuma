@@ -149,7 +149,7 @@ encrypted flash), set once during provisioning (see [`PROVISIONING.md`](PROVISIO
 | **Cellular** | Quectel **EG915U** (LTE **Cat-1 bis**, single antenna, ~24×20×2.4 mm) | full-duplex, <100 ms; data-only (voice-over-data) |
 | **Camera** | small MIPI-CSI sensor (via RV1106 ISP) | on-demand single JPEG; powered off otherwise |
 | **Mic** | Infineon **IM69D130** (PDM) | monitored by wake island for KWS; routed to SoC in session |
-| **Audio out** | **MAX98357A** (I2S) + 20 mm 8 Ω speaker | fire upward toward face |
+| **Audio out** | **MAX98357A** (I2S) + 20 mm 8 Ω speaker; **+ Bluetooth A2DP** to earbuds | speaker fires toward face; earbuds = private/clear (ADR-0008) |
 | **Haptics** | LRA + **DRV2605L** | state cues without a screen |
 | **Indicator** | RGB LED | + earcons |
 | **SIM** | **SGP.32 eSIM** or on-die **iSIM** | remote-provisionable, no UI needed |
@@ -245,10 +245,10 @@ register a tool only when its hardware/config is present). Each capability impli
 - **Location/directions** — `get_location` + `directions` tools. On-demand ("how do
   I get to X?") is on-grain; live turn-by-turn is cheap *because the route is cached
   and tracking runs on the wake-island*, with the SoC waking only per turn.
-- **Bluetooth audio out** — pairs AirPods/BT headphones as an A2DP sink, which also
-  makes the AI's *voice* private/clear (the micro-speaker fallback, ADR-0003). A2DP
-  source is **not guaranteed on the RV1106 IPC BSP** (BLE-leaning) — validate or add
-  a dedicated BT-audio path (see BOM).
+- **Bluetooth audio out** (ADR-0008) — pairs AirPods/BT headphones for private,
+  clear AI voice + music. A2DP source is mature on Linux (BlueZ); the requirement is
+  a SoC/module with **BT-Classic/A2DP** support (the RV1106 IPC BSP is BLE-leaning),
+  else a dedicated A2DP-source chip. Routed via a second `AudioOut` HAL impl.
 - **Music over cellular is data-heavy** (~60 MB/h vs voice's ~20 MB/h) — fine on
   Wi-Fi, real money on a metered IoT SIM.
 
@@ -323,22 +323,46 @@ via the wake island) plus **passive graphite/Cu spreading** to an outward
 radiating face with skin-side insulation. Continuous streaming — the regime that
 throttled the Ai Pin — is explicitly avoided.
 
-### ADR-0007 — Aluminum unibody as heat spreader; portless waterproof; non-metal RF window
+### ADR-0007 — Aluminum unibody as heat spreader; sealed-USB-C waterproof; non-metal RF window
 
 **Status:** Accepted.
 
 **Decision.** Use an **aluminum unibody** as both structure and heat exchanger
 (hot parts strapped to it via TIM + graphite); make the device **waterproof
 (target IP68)** with a printed silicone gasket, acoustic membranes for mic/speaker,
-and **portless charging** (Qi or magnetic pogo, no USB-C); and place the cellular
-antenna behind a **non-conductive RF window** in the body, isolated from the metal.
+and **sealed USB-C** charging+data (IP67 receptacle, gasket-wrapped); and place the
+cellular antenna behind a **non-conductive RF window** in the body, isolated from
+the metal.
 
 **Rationale.** A metal body is the best passive spreader *and* a Faraday cage, so
 the antenna must get a deliberate non-metal window; the outward face is contended
 between radiator and antenna and is resolved in 3D (radiator + sides aluminum; RF
-window at an edge, away from the body). Eliminating the USB-C port both improves
-waterproofing and is free (setup is app-less over BLE/SoftAP).
+window at an edge, away from the body). USB-C is kept for data (flashing / dev /
+recovery) and sealed IP67-style — the one waterproofing weak point, solved with a
+gasketed receptacle.
 
 **Consequences.** Bigger than a tiny pendant (small-puck/Ai-Pin class); the
 enclosure becomes a real co-design of thermal + RF + sealing. Detailed in
 [`ENCLOSURE.md`](ENCLOSURE.md).
+
+### ADR-0008 — Bluetooth audio output (A2DP) is first-class
+
+**Status:** Accepted.
+
+**Decision.** Private, clear audio out via **Bluetooth A2DP** to earbuds/headphones
+(AirPods or any BT sink) is **table-stakes**, alongside the speaker. Treat **BlueZ
+A2DP-*source* support as a hard requirement** when selecting the production SoC /
+Wi-Fi-BT module (Path A, ~$0 extra); fall back to a **dedicated A2DP-source BT-audio
+chip fed by I2S** (Path B, ~$5–8) if the chosen SoC's BT stack can't. Adds a 2.4 GHz
+BT antenna + a pairing flow; output routes through a second `AudioOut` HAL impl
+(speaker vs BT, BT-when-connected).
+
+**Rationale.** A bare micro-speaker is weak and non-private outdoors (ADR-0003);
+earbuds make the assistant usable in public and double for music/calls. A2DP source
+is mature on Linux (BlueZ) — the only real risk is the RV1106 IPC BSP being
+BLE-leaning, hence the selection requirement. Optional **HFP** adds the earbud mic
+for fully discreet two-way.
+
+**Consequences.** Constrains the SoC/module choice (or adds a chip); ~100–200 ms
+A2DP latency stacks on the cloud round-trip (use AAC for AirPods quality). Elevates
+the BT-earbud "optional fallback" of ADR-0003 to a first-class output.

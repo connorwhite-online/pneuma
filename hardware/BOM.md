@@ -79,11 +79,18 @@ by the SoC board, modem, and battery.
   chip like u-blox MAX-M10 / Quectel L76) **+ a small GNSS antenna** (~7 mm GPS chip
   antenna, or a **cellular+GNSS combo flex** = one part, two U.FL leads). Enables the
   `get_location` / `directions` tools (ARCHITECTURE §8).
-- **Bluetooth audio out (AirPods / BT headphones):** wanted for private/clear AI
-  voice *and* music. Needs a **Bluetooth Classic + A2DP source** path — **not
-  guaranteed on the RV1106 IPC BSP** (BLE-leaning). Validate A2DP on the combo module
-  + BlueZ, or add a **dedicated BT-audio chip** (e.g. a BM83-class module). Open item,
-  not confirmed.
+- **Bluetooth audio out (AirPods / BT headphones) — table-stakes (ADR-0008).**
+  A2DP *source* (device → earbuds) for private/clear AI voice + music.
+  - **Path A (preferred, ~$0):** require a SoC/Wi-Fi-BT module with **BT-Classic +
+    A2DP via BlueZ** (mature on Linux; a Pi does it). Make this a hard SoC-selection
+    criterion — the RV1106 IPC BSP is BLE-leaning, so verify or pick a module that
+    exposes BR/EDR.
+  - **Path B (fallback, ~$5–8):** a **dedicated A2DP-*source* BT-audio chip** fed by
+    I2S (e.g. Qualcomm CSR8675, BlueCreation BC127 — must support *source*, not just
+    sink); it owns pairing + codecs.
+  - Either way: a **2.4 GHz BT antenna** (small chip, or shared with Wi-Fi) and a
+    pairing flow. Output routes via a second `AudioOut` HAL impl (speaker vs BT).
+    Optional **HFP** adds the earbud mic for discreet two-way.
 - **Spotify:** software only — **librespot** (MIT, Rust) on the SoC; needs Spotify
   Premium. Music over cellular ~1 MB/min — prefer Wi-Fi.
 
