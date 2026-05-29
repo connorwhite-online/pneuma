@@ -1,96 +1,82 @@
 # Pneuma
 
-**An open-source, screenless AI device with sight and sound — bring your own model.**
+**A standalone, screenless AI device with sight and sound — no phone, no app, no
+memory of you except what it chooses to keep.**
 
-Pneuma is firmware (and a companion app) for a small wearable that lets you talk
-with an AI and, *only when you ask*, let it see what you see. No screen. No
-always-on recording. No vendor lock-in. You supply your own model — an API key
-for a frontier provider, or a local endpoint you run yourself — and Pneuma is
-the *body*: ears, mouth, an eye you point on demand, and a consistent set of
-wake words and gestures.
+Pneuma is firmware (and hardware) for a small wearable you can talk with, and —
+*only when you ask* — let it see what you see. It carries its own cellular
+connection, so it works on its own out in the world. You bring your own model (an
+API key for a frontier provider). It is **ephemeral**: it stores no conversations,
+no audio, no photos — nothing but one small, curated **memory file**.
 
-> Status: **early design / pre-implementation.** This repository currently
-> contains the founding architecture and research. No firmware has been written
-> yet. See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for the plan and
-> [`docs/RESEARCH.md`](docs/RESEARCH.md) for the evidence behind it.
+> *Pneuma* (πνεῦμα) is Greek for **breath / spirit**. Each interaction is breath —
+> it happens, then it's gone. The single memory file is the spirit that endures.
+
+> Status: **early design / pre-implementation.** This repo currently holds the
+> architecture and research; no firmware is written yet. Start with
+> [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md), then
+> [`docs/RESEARCH.md`](docs/RESEARCH.md).
 
 ## What Pneuma is (and isn't)
 
-- **Voice-first, screenless.** You speak; it speaks back. Interaction is wake
-  word + button + haptics + a few audio cues — never a display.
-- **Vision on demand, not always-watching.** The camera captures a frame *when
-  you ask something visual* ("what am I looking at?"), gated by intent. This is
-  deliberately the opposite of the always-recording pendants that have drawn
-  privacy backlash.
-- **Bring your own LLM.** The "brain" is pluggable. Point Pneuma at OpenAI,
-  Google Gemini, xAI Grok, Anthropic Claude, or your own local model. Your
-  credentials live in the companion app, never on the device.
-- **Open and self-hostable.** Firmware, companion app, and any backend are meant
-  to be fully open and runnable by you — no account required to own your data.
+- **Voice-first, screenless.** You speak; it speaks back. Wake word + button +
+  haptics + audio cues — never a display.
+- **Standalone.** Onboard **cellular (LTE Cat-1 bis)** — no phone, no companion
+  app. Setup is a one-time web page the device hosts itself.
+- **Vision on demand, not always-watching.** The camera powers on to grab a single
+  frame *when you ask something visual*, then powers off. The opposite of the
+  always-recording pendants that drew privacy backlash.
+- **Bring your own LLM.** The brain is pluggable — OpenAI, Gemini, Grok, Claude.
+  Your key is stored on the device, set once at setup.
+- **Ephemeral + one memory file.** No history, no recordings. The only persistent
+  state is a bounded (~KB), model-curated, user-resettable, portable memory file.
 
-## Why it's different
-
-The wearable-AI category's recurring wound is *always-on recording*: it triggers
-bystander-consent problems, public backlash, and a collapse of trust when the
-maker gets acquired. Pneuma's **on-demand capture + open-source + self-hostable +
-bring-your-own-key** posture is a coherent, trustworthy alternative the
-incumbents structurally can't offer.
-
-## How the model works (in one diagram)
+## How it works (one picture)
 
 ```
-        ┌─────────────────┐    BLE (LC3 audio + JPEG frame)  ┌────────────────────┐
-        │     PENDANT      │  ───────────────────────────▶  │   COMPANION APP    │
-        │  (credential-    │   on-demand photo over BLE     │   (holds keys,     │
-        │   free)          │  ───────────────────────────▶  │   routes provider) │
-        │                  │  ◀───────────────────────────  │                    │
-        │ • wake word      │        audio reply             └─────────┬──────────┘
-        │ • mic capture    │                                          │
-        │ • on-demand cam  │                                          │  user's own
-        │ • speaker/haptic │                          ┌───────────────┴───────────────┐
-        └─────────────────┘                          │         THE BRAIN              │
-                                                      │  Tier 1: native speech-to-     │
-                                                      │   speech (OpenAI / Gemini /    │
-                                                      │   Grok)                        │
-                                                      │  Tier 2: composed STT→LLM→TTS  │
-                                                      │   (Claude / local Ollama)      │
-                                                      └────────────────────────────────┘
+   ┌───────────────── PNEUMA DEVICE ──────────────────┐
+   │  ┌───────────────┐   wake/power   ┌────────────┐  │   cellular (Cat-1 bis)
+   │  │  WAKE ISLAND  │ ─────────────▶ │  SESSION   │  │  ──────────────────────▶  ┌──────────┐
+   │  │  (always on,  │                │   BRAIN    │  │   audio + on-demand JPEG  │ PROVIDER │
+   │  │   µA–mA)      │ ◀───────────── │ (Linux SoC │  │  ◀──────────────────────  │ your key │
+   │  │ wake word/btn │   done/sleep   │ +modem+cam)│  │      audio reply          └──────────┘
+   │  └───────────────┘                └─────┬──────┘  │
+   │                              ┌──────────┴───────┐ │
+   │                              │  memory file ~KB │ │  ← only persistent state
+   │                              └──────────────────┘ │
+   └───────────────────────────────────────────────────┘
 ```
 
-The companion app speaks to whichever provider you chose through a **two-tier
-abstraction** so "bring your own LLM" works for *every* backend — including the
-ones (Claude, local models) that have no native voice API. See
-[`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
+A tiny always-on chip listens for the wake word; it powers up the Linux SoC +
+cellular modem **only on demand** to answer, then shuts them off. That on-demand
+burst (not continuous streaming) is what keeps it cool and the battery alive — the
+thing the Humane Ai Pin got wrong. See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
 
-## Repository layout (planned)
+## Repository layout
 
 ```
 pneuma/
-├── README.md            ← you are here
+├── README.md
 ├── docs/
 │   ├── ARCHITECTURE.md  ← system design, provider abstraction, ADRs
-│   ├── APP.md           ← companion app design (the brain-router)
-│   ├── PROTOCOL.md      ← BLE contract shared by firmware + app
+│   ├── MEMORY.md        ← the memory-file spec (the "spirit")
+│   ├── PROVISIONING.md  ← one-time, app-less device setup
+│   ├── PROTOCOL.md      ← internal wake-island ↔ Linux-SoC interface
 │   └── RESEARCH.md       ← sourced research the design is built on
 ├── hardware/
 │   └── BOM.md           ← bill of materials + interconnect map
-├── firmware/            ← (planned) nRF5340 firmware (Zephyr / nRF Connect SDK)
-└── app/                 ← (planned) Flutter companion app + pneuma-core router
+└── firmware/            ← (planned) wake-island MCU + Linux session software
 ```
 
 ## Hardware core
 
-A single **Nordic nRF5340** (BLE 5.x, dual Cortex-M33, native PDM mic + I2S audio
-+ LC3/LE Audio) driving an **ArduCAM Mega SPI camera** (on-chip JPEG, one frame on
-demand), an I2S micro-speaker, a MEMS mic, a button, an LRA haptic motor, and an
-RGB LED, on a small LiPo. One chip, one radio — chosen for best-in-class idle
-power (the device is always listening) and because Nordic maintains the exact
-nRF5340 + ArduCAM driver. Full BOM and interconnect in
-[`hardware/BOM.md`](hardware/BOM.md); rationale in ADR-0001 in
-[`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
+A tiny always-on **wake-island MCU** (nRF52840 / Syntiant) + an on-demand **Linux
+SoC** (Rockchip RV1106-class) + a **Quectel EG915U** LTE Cat-1 bis modem + a MIPI
+camera, micro-speaker, mic, haptics, LED, and a ~500–1000 mAh LiPo with passive
+graphite thermal spreading. It's a tiny wearable Linux computer (Ai-Pin-class),
+engineered to dodge what killed the Ai Pin. Full BOM:
+[`hardware/BOM.md`](hardware/BOM.md); rationale in ADR-0001.
 
 ## License
 
-Intended to be fully open source (license TBD — leaning permissive, e.g. MIT, to
-match the openness bar set by projects like Omi). Contributions welcome once the
-initial scaffold lands.
+Intended to be fully open source (license TBD — leaning permissive, e.g. MIT).

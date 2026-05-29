@@ -1,49 +1,59 @@
 # Pneuma — Architecture
 
-This document describes the intended system design for Pneuma: a screenless,
-voice-first wearable AI device with on-demand vision and a pluggable ("bring your
-own") model. It is the synthesis of the research recorded in
-[`RESEARCH.md`](RESEARCH.md). Where a design choice was a genuine fork, it is
-captured as an **Architecture Decision Record (ADR)** at the end.
+Pneuma is a **standalone, screenless, voice-first AI device** with on-demand
+vision and a pluggable ("bring your own") model. It carries its own cellular
+connection — **no phone, no companion app** — and is **ephemeral**: it stores
+nothing except one small, curated memory file.
 
-Status: **design, pre-implementation.** Nothing here is built yet; this is the
-blueprint we intend to build against. We are designing for the *best* core, not a
-throwaway prototype — the enclosure/mechanical will be iterated separately.
+This document is the synthesis of the research in [`RESEARCH.md`](RESEARCH.md).
+Genuine forks are captured as **Architecture Decision Records (ADRs)** at the end.
+
+Status: **design, pre-implementation.** This is the blueprint, built for the
+*right* core rather than a throwaway prototype.
+
+> **Name & principle.** *Pneuma* (πνεῦμα) = breath / spirit. Each interaction is
+> breath — it happens and is gone. The one persistent memory file is the spirit
+> that endures. The device is otherwise stateless.
 
 ---
 
 ## 1. System overview
 
-Pneuma splits cleanly into three tiers, each with a single clear job:
+There is no phone in the loop. Three tiers, all on or beyond the device itself:
 
-| Tier | What it is | Responsibilities | Holds secrets? |
-|------|------------|------------------|----------------|
-| **Pendant** | The wearable (nRF5340) | Wake word, mic capture, on-demand camera, audio out, haptics/LED, BLE link | **No** |
-| **Companion app** | Phone (or optional home hub) | Credential storage, provider routing, connectivity, session orchestration | **Yes** |
-| **Provider (brain)** | User's chosen model | Reasoning, and (Tier 1) speech | Remote/local |
+| Tier | What it is | Job | Power |
+|------|------------|-----|-------|
+| **Wake island** | Tiny always-on MCU (nRF52840 / Syntiant) | Wake word, button, sensors; powers the session tier up/down | µA–mA, always on |
+| **Session brain** | Small Linux SoC (Rockchip RV1106-class) + **Cat-1 bis modem** + camera | Provider router, realtime session over cellular, on-demand photo, audio I/O | watts, **on-demand only** |
+| **Provider (brain)** | User's chosen cloud model | Reasoning + (Tier 1) speech | remote, user's API key |
 
 ```
-        ┌─────────────────┐  BLE (LC3 audio + JPEG frame)  ┌────────────────────┐
-        │     PENDANT      │  ───────────────────────────▶  │   COMPANION APP    │
-        │  (credential-    │   on-demand photo over BLE     │   (keys + router)  │
-        │   free)          │  ◀───────────────────────────  │                    │
-        │                  │        audio reply             └─────────┬──────────┘
-        └─────────────────┘                                          │
-                                                          ┌──────────┴───────────┐
-                                                          │      THE BRAIN        │
-                                                          │  Tier 1 / Tier 2      │
-                                                          └───────────────────────┘
+   ┌───────────────── PNEUMA DEVICE ──────────────────┐
+   │                                                   │
+   │  ┌───────────────┐   wake/power   ┌────────────┐  │      cellular (Cat-1 bis)
+   │  │  WAKE ISLAND  │ ─────────────▶ │  SESSION   │  │  ─────────────────────────▶  ┌──────────┐
+   │  │  (always on)  │                │   BRAIN    │  │     LC3/Opus audio + JPEG     │ PROVIDER │
+   │  │ • wake word   │ ◀───────────── │ (Linux SoC │  │  ◀─────────────────────────   │ (your    │
+   │  │ • button      │   done/sleep   │  + modem   │  │       audio reply             │  API key)│
+   │  │ • mic monitor │                │  + camera) │  │                               └──────────┘
+   │  └───────────────┘                └─────┬──────┘  │
+   │                                         │         │
+   │                              ┌──────────┴───────┐ │
+   │                              │  memory file     │ │  ← the only persistent state
+   │                              │  (bounded, ~KB)  │ │
+   │                              └──────────────────┘ │
+   └───────────────────────────────────────────────────┘
 ```
 
-**Why the pendant holds no credentials:** it keeps the most-exposed, most-easily-
-lost physical object free of secrets; it lets the open hardware be trivially
-reproducible; and it is the right privacy story. The phone is already a battery,
-a modem, and a compute host — offloading to it keeps the pendant tiny and cheap.
+**Why a Linux SoC, not an MCU:** standalone realtime voice over cellular needs a
+real WebRTC/TLS stack, hardware JPEG, OTA, and robust connection management.
+Every shipping standalone-cellular voice device works this way (the Humane Ai Pin
+used a phone-class Snapdragon). See ADR-0001.
 
-**Why a single radio (BLE) is enough:** the device is fundamentally an *I/O node*
-— the LLM lives in the phone/cloud. It only ever needs to move compressed audio
-and, on demand, a single JPEG to the phone. Both fit comfortably over BLE, so no
-Wi-Fi (and no second SoC) is required. See ADR-0001.
+**Why the wake island exists:** the Linux SoC + modem are power- and heat-hungry,
+so they must be *off* almost always. A tiny always-on MCU listens for the wake
+word and only powers the session tier up to answer, then cuts it. This on-demand
+duty cycle is what keeps the device cool and the battery alive (see §6).
 
 ---
 
@@ -51,280 +61,235 @@ Wi-Fi (and no second SoC) is required. See ADR-0001.
 
 ```
    ┌──────────────────────────────────────────────────────────────────────┐
-   │  idle (low-power, mic listening for wake word on-device)               │
+   │  SLEEP — session brain powered OFF; wake island listening (µA–mA)      │
    └───────────────┬────────────────────────────────────────────────────────┘
-                   │ "Hey Pneuma"  (or button press = push-to-talk)
+                   │ "Hey Pneuma"  (or button)  → wake island powers up brain
                    ▼
    ┌──────────────────────────────────────────────────────────────────────┐
-   │  LISTENING   → earcon (rising chime) + LED + haptic tap                │
-   │  stream LC3 audio over BLE to the companion app                        │
+   │  CONNECT — Linux SoC boots/resumes, modem attaches, loads memory file  │
+   │  earcon (rising chime) + LED + haptic tap                              │
    └───────────────┬────────────────────────────────────────────────────────┘
-                   │ (intent appears visual? e.g. "what am I looking at?")
+                   │  (intent appears visual? "what am I looking at?")
                    ▼
    ┌──────────────────────────────────────────────────────────────────────┐
-   │  CAPTURE (on-demand only)  → power up camera, grab ONE JPEG frame      │
-   │  visible capture indicator (LED + sound); send frame over BLE (<1s)    │
-   │  then power the camera back down                                       │
-   └───────────────┬────────────────────────────────────────────────────────┘
-                   ▼
-   ┌──────────────────────────────────────────────────────────────────────┐
-   │  THINKING  → app routes to chosen provider (Tier 1 or Tier 2)          │
+   │  CAPTURE (on-demand only) — power camera, grab ONE JPEG, then off      │
+   │  visible/audible capture indicator                                     │
    └───────────────┬────────────────────────────────────────────────────────┘
                    ▼
    ┌──────────────────────────────────────────────────────────────────────┐
-   │  SPEAKING  → audio reply played on pendant speaker; "done" earcon      │
+   │  CONVERSE — stream audio (+frame) to chosen provider over cellular;    │
+   │  play voice reply; (optionally) update the memory file                 │
+   └───────────────┬────────────────────────────────────────────────────────┘
+                   │  silence / "thanks" / timeout
+                   ▼
+   ┌──────────────────────────────────────────────────────────────────────┐
+   │  FORGET & SLEEP — drop all audio/frames/context, power modem + SoC     │
+   │  down, return to wake island. Nothing kept but the memory file.        │
    └────────────────────────────────────────────────────────────────────────┘
 ```
 
-The camera is **never** powered except inside an explicit, indicated CAPTURE
-step. There is no continuous video, no background recording. Physically, the
-camera sits behind a load switch the firmware only closes for the capture.
+The expensive tier lives only inside CONNECT→CONVERSE; the rest of the time the
+device is asleep but listening. Camera is powered only inside CAPTURE.
 
 ---
 
 ## 3. The provider abstraction (the core of "bring your own LLM")
 
-Providers expose their "brain" in two fundamentally different shapes. To support
-*any* model the user brings, the companion app implements **both**, behind one
+This runs **on the device** (in the Linux session brain), not in any app.
+Providers expose their "brain" two ways; Pneuma implements both behind one
 interface.
 
 ### Tier 1 — `RealtimeProvider` (native speech-to-speech)
-One streaming socket: audio (and sometimes video) up, voice down. ASR +
-reasoning + TTS + turn-taking happen server-side. Lowest latency, least code.
-
-- **OpenAI** `gpt-realtime` (GA) — audio + image input, WebRTC/WS, ephemeral tokens.
-- **Google Gemini Live** — audio + **native video input (~1 fps)**, WebSocket, ephemeral tokens.
-- **xAI Grok Voice** — audio, WebSocket, **OpenAI-Realtime-protocol-compatible** (so one driver targets both OpenAI and Grok by swapping the base URL).
-- **AWS Nova Sonic** — audio, HTTP/2 bidi, AWS SigV4.
+One streaming socket: audio (and sometimes video) up, voice down. Lowest latency,
+least local compute — ideal over cellular.
+- **OpenAI** `gpt-realtime` — audio + image, WebRTC/WS.
+- **Google Gemini Live** — audio + **native video (~1 fps)**, WebSocket.
+- **xAI Grok Voice** — audio, WebSocket, **OpenAI-Realtime-compatible** (one driver → two providers).
+- **AWS Nova Sonic** — audio, HTTP/2.
 
 ### Tier 2 — `ComposedProvider` (STT → text LLM → TTS)
-Pneuma orchestrates the pipeline itself. **Required** for any model with no
-native voice API:
+Device orchestrates the pipeline (calling cloud STT/TTS APIs). **Required** for:
+- **Anthropic Claude** — text/vision only, no native S2S.
+- (Future) on-device/off-grid models, if the Linux SoC's NPU is ever used for a local fallback.
 
-- **Anthropic Claude** — text/vision only (Messages API); no native S2S.
-- **Local models** (Ollama / llama.cpp) — text only; this tier is what makes a
-  **fully off-grid mode** possible (local STT like Whisper/Moonshine + local LLM
-  + local TTS like Piper/Kokoro).
-
-Orchestration can lean on existing open frameworks (Pipecat, LiveKit Agents,
-Kyutai Unmute) rather than reinventing the pipeline.
-
-### Interface sketch
-
+### Interface (illustrative)
 ```
-interface Provider {
-  startSession(opts): Session        // opens whatever transport the backend needs
-}
-
-interface Session {
-  pushAudio(chunk)                   // mic audio in
-  pushImage(frame)                   // on-demand camera frame in
-  onAudioReply(cb)                   // voice out (Tier 1 native; Tier 2 from TTS)
-  onTranscript(cb)                   // text, for logging/tools
-  endTurn() / close()
-}
+Provider.startSession(opts) -> Session
+Session:
+  pushAudio(chunk)      // mic up
+  pushImage(jpeg)       // on-demand frame up
+  audioReply -> stream  // voice down
+  transcript -> stream  // text, for memory updates / tools
+  toolCalls  -> stream  // MCP
+  endTurn(); close()
 ```
+Adding a model = adding one driver + a stored key. The memory file is injected
+into the session as context at start (see §5).
 
-`RealtimeProvider` maps these onto a single socket; `ComposedProvider` fans them
-out to STT → LLM → TTS. The pendant firmware is **identical** in both cases — it
-only ever speaks "audio + optional JPEG" to the app over BLE. All provider
-complexity is hidden in the app.
+### Capability matrix
+| Provider | Native voice | Vision | Auth |
+|----------|--------------|--------|------|
+| OpenAI `gpt-realtime` | ✅ | image | key + ephemeral token |
+| Gemini Live | ✅ | ✅ video ~1fps | key + ephemeral token |
+| xAI Grok | ✅ (OpenAI-compatible) | audio | key |
+| AWS Nova Sonic | ✅ | audio | SigV4 |
+| Anthropic Claude | ❌ → Tier 2 | image | key |
 
-### Tooling / glue
-Adopt **MCP (Model Context Protocol)** for the tool/provider layer — both Omi and
-xiaozhi-esp32 converged on MCP as the model-agnostic way to give the brain tools
-and route between models.
-
-### Capability matrix (what the router must reason about)
-
-| Provider | Native voice | Vision input | Off-grid | Auth |
-|----------|--------------|--------------|----------|------|
-| OpenAI `gpt-realtime` | ✅ | image | ❌ | key + ephemeral token |
-| Gemini Live | ✅ | ✅ video ~1fps | ❌ | key + ephemeral token |
-| xAI Grok | ✅ (OpenAI-compatible) | audio | ❌ | key |
-| AWS Nova Sonic | ✅ | audio | ❌ | SigV4 |
-| Anthropic Claude | ❌ → Tier 2 | image | ❌ | key |
-| Local (Ollama) | ❌ → Tier 2 | VLM-dependent | ✅ | none |
+Glue: **MCP** for tools/routing. Keys are stored on-device (secure element /
+encrypted flash), set once during provisioning (see [`PROVISIONING.md`](PROVISIONING.md)).
 
 ---
 
-## 4. Hardware core: single nRF5340 + SPI camera
+## 4. Hardware core
 
-One SoC handles compute, BLE, mic, speaker, and (via SPI) the camera. See
-**ADR-0001** for the full reasoning and the alternatives we rejected.
+| Function | Part (indicative) | Notes |
+|----------|-------------------|-------|
+| **Wake island** | Nordic **nRF52840** (or Syntiant **NDP120** for <1 mW KWS + beamforming) | always-on KWS (DS-CNN/TFLM), button, BLE for setup, powers the SoC |
+| **Session SoC** | Rockchip **RV1106** (Cortex-A7 + ISP + ~0.5–1 TOPS NPU, tiny) | Linux; native MIPI camera ISP + HW JPEG; runs the provider router |
+| **Cellular** | Quectel **EG915U** (LTE **Cat-1 bis**, single antenna, ~24×20×2.4 mm) | full-duplex, <100 ms; data-only (voice-over-data) |
+| **Camera** | small MIPI-CSI sensor (via RV1106 ISP) | on-demand single JPEG; powered off otherwise |
+| **Mic** | Infineon **IM69D130** (PDM) | monitored by wake island for KWS; routed to SoC in session |
+| **Audio out** | **MAX98357A** (I2S) + 20 mm 8 Ω speaker | fire upward toward face |
+| **Haptics** | LRA + **DRV2605L** | state cues without a screen |
+| **Indicator** | RGB LED | + earcons |
+| **SIM** | **SGP.32 eSIM** or on-die **iSIM** | remote-provisionable, no UI needed |
+| **Power** | LiPo ~500–1000 mAh + power-path PMIC + 100–470 µF bulk cap | LTE = steady ~0.8 A draw (no 2G spikes), so no supercap needed |
+| **Thermal** | graphite/Cu heat spreader; outward radiating face; skin-side insulation | passive only (see §6) |
+| **Storage** | SoC SPI-NAND/eMMC | holds OS + the memory file |
 
-| Function | Part | Connection to nRF5340 |
-|----------|------|------------------------|
-| MCU + radio | **Nordic nRF5340** (module, e.g. Raytac MDBT53-1M) | — |
-| Camera | **ArduCAM Mega 3MP/5MP** (SPI, on-chip JPEG) | SPI + power-gate GPIO |
-| Microphone | **Infineon IM69D130** (PDM MEMS) | PDM (CLK + DATA) |
-| Audio amp | **MAX98357A** (I2S Class-D) | I2S (BCLK/LRCLK/DIN) + shutdown GPIO |
-| Speaker | 20 mm 8 Ω | amp output |
-| Haptics | **LRA + DRV2605L** driver | I2C + enable GPIO |
-| Indicator | RGB LED (or WS2812) | GPIO |
-| Input | momentary button | GPIO (interrupt) |
-| Charger | **MCP73831** (or BQ25180) | USB-C VBUS in |
-| Fuel gauge | **MAX17048** | I2C |
-| Battery | LiPo ~250 mAh | via charger |
-
-Full BOM with part numbers, prices, and the complete interconnect map lives in
-[`../hardware/BOM.md`](../hardware/BOM.md).
-
-### Power profile
-The dominant state is *idle-but-listening*. On an nRF5340 this is a few mA
-(CPU + PDM + periodic BLE), versus ~25–40 mA for an ESP32-S3 (which cannot run
-wake-word detection from deep sleep). That ~5–8× difference yields roughly
-**33–67 h on a 250 mAh cell** for the nRF design. The camera's ~55–150 mA only
-applies during the brief on-demand capture and is gated off otherwise.
-
-### Transport
-- **Audio:** LC3 over BLE (LE Audio) — native to the nRF5340's audio subsystem.
-  (Opus is also feasible; LC3 is the natural LE Audio choice.)
-- **Camera:** a single JPEG over BLE GATT at 2M PHY — a 10–50 KB frame transfers
-  in ~0.06–0.4 s, well under a second. No Wi-Fi needed because we never stream
-  video, only fetch one frame on demand.
+Full BOM + interconnect: [`../hardware/BOM.md`](../hardware/BOM.md).
+Internal wake-island ↔ SoC interface: [`PROTOCOL.md`](PROTOCOL.md).
 
 ---
 
-## 5. Wake word & screenless UX
+## 5. Ephemerality & the memory file
 
-- **Engine: a Cortex-M keyword-spotting model** (DS-CNN class) running on the
-  nRF5340 via TFLite-Micro + CMSIS-NN. Note: **microWakeWord does *not* port** —
-  it depends on the ESP32-S3's Xtensa vector instructions and PSRAM. A single
-  wake word fits the M33's 512 KB RAM easily; this is a shipping pattern in
-  hearables. Training data can still be generated with the open
-  Piper/openWakeWord synthetic-sample pipeline; we train a Cortex-M-suitable
-  model and keep it open (avoid Porcupine, whose custom words are proprietary).
-- **Wake phrase: "Hey Pneuma."** "Pneuma" alone is brandable but acoustically
-  weak as a trigger (silent "p" + soft nasal onset = little energy at word start,
-  which streaming detectors rely on). A stressed carrier improves detection.
-  Validate false-accept/false-reject with a real training run.
-- **Inputs:** single button — `tap` = start/stop listening (push-to-talk),
-  `double-tap` = secondary, `long-press` = power/pairing.
-- **Feedback (no screen):** LRA **haptics** (DRV2605L) + **RGB LED** + a small set
-  of **earcons** — rising chime = listening, soft tone = done, low tone = error.
-  Always give a *deliberate, visible/audible* signal when the camera captures.
+**Ephemeral by default.** No transcripts, no audio, no photos are retained. A
+session's audio and any captured frame are streamed to the provider and dropped.
+Nothing about *what you said or saw* persists.
+
+**The memory file — the only persistent state.** A single bounded file (target a
+few KB, hard cap) the model curates:
+- **Content:** durable facts about the user (name, preferences, a handful of
+  standing instructions) — *not* a conversation log.
+- **Lifecycle:** read into the session as context at CONNECT; the model may
+  propose updates during CONVERSE; on FORGET the device keeps only the updated
+  memory file and discards everything else.
+- **Bounded:** when near the cap, the model must *summarize/compress* rather than
+  append — a rolling memory, so it never grows into a log.
+- **On-device only:** never uploaded except as context to the user's *own* chosen
+  model during a session. Stored in encrypted flash.
+- **User-controlled:** viewable/editable during provisioning; **factory reset =
+  forget me**; ideally **portable** (export/import to move your "self" to another
+  Pneuma).
+
+See ADR-0005.
 
 ---
 
-## 6. Audio output
+## 6. Thermal & power (the make-or-break)
 
-**I2S micro-speaker (MAX98357A + 20 mm 8 Ω), firing upward toward the face.**
-Bone conduction was evaluated and **rejected for a pendant**: it requires firm
-skull contact a free-hanging necklace can't maintain, and the collarbone is the
-worst-rated location for it. The micro-speaker is the only reliably intelligible
-option for a chest-worn device. Caveats: it is weak outdoors/in noise and is
-**not private** (bystanders hear it). Offer optional Bluetooth-earbud fallback
-for privacy/noise, accepting that this trades against the "no earbuds" ideal.
+The Humane Ai Pin proved standalone-cellular AI is **thermally** hard: continuous
+LTE streaming (~3 W modem) + an always-on app SoC is 2–6 W in a sealed body, which
+throttled it. Skin-facing surfaces must stay **≤43 °C** (target ≤40–42 °C).
+
+Pneuma's strategy is to *not generate the heat continuously*:
+- **On-demand duty cycle** — the modem + SoC are off except during a session; the
+  device bursts and sleeps, the regime that lets Apple Watch LTE and kids' GPS
+  watches stay cool. (This is why the wake island exists.)
+- **Passive spreading** — graphite/copper spreader across the whole shell + a
+  deliberate outward radiating face, with insulation toward the skin. An *active*
+  heat exchanger is **not feasible** at pendant scale (a few cm² shed only
+  ~0.1–0.3 W/°C; no room/power for fans/pumps).
+- **Power** — LTE draws a steady ~0.7–0.8 A while connected (no 2 G micro-spikes),
+  so a single LiPo + bulk cap + power-path PMIC suffices. Runtime ≈ hours of
+  active talk; all-day on the on-demand model.
+
+Tension to design around: the antenna *and* the heat spreader both want the
+outward (away-from-body) face — a real pendant-scale layout conflict for the
+enclosure phase. See ADR-0006.
 
 ---
 
 ## 7. Privacy & trust posture
 
-This is a product principle, not just a feature:
-
-- **On-demand capture only.** No continuous audio recording, no background video.
-  Camera is physically powered off (behind a load switch) except during an
-  explicit, indicated CAPTURE step.
-- **No secrets on the device.** Keys live in the companion app.
-- **Visible/audible capture indicator** is mandatory (category table-stakes).
-- **Open + self-hostable** end to end, so the device can't be bricked or have its
-  trust model changed by an acquisition — the failure mode that has repeatedly
-  burned this category.
+- **Standalone, no app, no Pneuma server.** Audio/photos go only to *your* chosen
+  provider, over your own SIM.
+- **Ephemeral.** Nothing to leak — no history, no recordings; only the small,
+  on-device, user-resettable memory file.
+- **On-demand capture** — camera powered only during an indicated CAPTURE; no
+  ambient recording. This is the differentiator the always-on incumbents
+  (Friend, Bee, Limitless) structurally lack.
+- **Open + self-hostable-ish** — fully open firmware; the only cloud dependency is
+  the model *you* chose and pay for.
 
 ---
 
 ## Architecture Decision Records
 
-### ADR-0001 — The core is a single nRF5340 + SPI camera (not ESP32-S3, not dual-MCU)
+> **Decision history.** Earlier drafts assumed a phone-tethered, credential-free
+> pendant (first on a single ESP32-S3, then a single nRF5340). Both were
+> superseded when the **standalone, no-phone** requirement surfaced: with no phone
+> to provide internet or hold keys, the device must carry cellular + a real SoC
+> itself. The ADRs below reflect the standalone design.
 
-**Status:** Accepted. (Supersedes the earlier single-ESP32-S3 decision, which was
-made under a "fastest off-the-shelf v1" framing we have since dropped in favor of
-designing the best core outright.)
+### ADR-0001 — Standalone cellular on a small Linux SoC + always-on wake island
 
-**Context.** The device is a brain-offloaded I/O node: always-on wake word,
-audio over BLE, and a single on-demand photo. Three cores were evaluated:
-(A) single ESP32-S3, (B) dual-MCU (nRF for always-on audio + ESP32-S3 woken only
-for the camera), (C) single nRF5340 with an SPI camera.
+**Status:** Accepted. (Supersedes the phone-tethered ESP32-S3 and nRF5340 cores.)
 
-**Decision.** Build on a **single nRF5340 driving an ArduCAM Mega SPI camera.**
+**Decision.** Build a standalone device: a tiny **always-on MCU** (wake word +
+power control) that boots a small **Linux SoC** (Rockchip RV1106-class) + a
+**Cat-1 bis modem** (Quectel EG915U) + camera **on demand** for each session.
 
-**Rationale.**
-1. **Power.** An ESP32-S3 cannot run wake-word detection from deep sleep, so it
-   sits at ~25–40 mA in the always-listening state; an nRF is ~3–8 mA — a 5–8×
-   gap in the state the device lives in ~99% of the time. This rules out (A).
-2. **One frame over BLE is fast enough.** A 10–50 KB JPEG transfers in
-   ~0.06–0.4 s at 2M PHY. We never stream video, so the only thing that would
-   force Wi-Fi / an ESP32 (sustained throughput) never arises — this collapses
-   the choice between (B) and (C) toward (C).
-3. **The camera does the hard part.** The ArduCAM Mega outputs compressed JPEG
-   over plain SPI, so the nRF's lack of a camera (DCMI) interface is irrelevant.
-4. **It's a proven integration.** Nordic maintains an nRF5340 + ArduCAM Mega
-   Zephyr driver (`take_picture` sample) and official BLE image-transfer demos.
-5. **One chip covers the rest.** nRF5340 has native PDM (mic), I2S (speaker),
-   LC3/LE Audio, and BLE — no second SoC, radio, or firmware image.
+**Rationale.** No phone → the device needs its own internet radio and its own
+compute. Realtime voice over cellular requires a Linux-class WebRTC/TLS/OTA stack
+(unproven on bare MCUs; the Ai Pin used a Snapdragon). Cat-1 bis is the right
+cellular tier (full-duplex, <100 ms, single antenna); LTE-M is too jittery for
+live voice. The wake island keeps the power/heat-hungry tier off ~99% of the time.
 
-**Consequences / tradeoffs.**
-- Wake word must use a Cortex-M KWS model, not microWakeWord (see §5).
-- Real BLE throughput depends on the connecting phone's negotiated PHY/connection
-  interval — validate sub-1s photo transfer on target phones.
-- JPEG size is scene-dependent — validate the 10–50 KB assumption empirically.
-- We forgo Wi-Fi (no phone-free cloud), live video, and heavy on-device vision/ML.
-  None are in scope; if any becomes a hard requirement, revisit (B).
+**Consequences.** This is a tiny wearable Linux computer (Ai-Pin-class), not a
+cheap flashable MCU — higher cost/complexity, accepted deliberately. Thermal is
+the binding constraint (ADR-0006). Runtime is hours-of-talk / all-day-on-demand.
 
-### ADR-0002 — The provider layer is a two-tier abstraction (Realtime + Composed)
+### ADR-0002 — Two-tier provider abstraction, device-resident
 
-**Status:** Accepted.
+**Status:** Accepted (revised: now runs on the device, not a phone app).
 
-**Context.** "Bring your own LLM" must work for backends with native
-speech-to-speech (OpenAI/Gemini/Grok/Nova) *and* backends with none (Claude, all
-local models). A single-shape integration would silently exclude Claude and
-off-grid local use.
-
-**Decision.** Implement two backends behind one `Provider` interface:
-`RealtimeProvider` (single S2S socket) and `ComposedProvider` (STT → LLM → TTS,
-via Pipecat/LiveKit/Unmute-style orchestration). The pendant firmware is
-identical in both cases and only ever exchanges audio + optional JPEG with the
-app.
-
-**Consequences.** More app-side code, but it is the only design that honors
-"bring your own LLM" universally — and it is what resurrects a **fully off-grid
-mode** (local STT + LLM + TTS) as a first-class option.
+The `RealtimeProvider` / `ComposedProvider` split (see §3) lives in the Linux
+brain. It is the only way "bring your own LLM" covers both native-voice providers
+and Claude/local. Keys are stored on-device, set once at provisioning.
 
 ### ADR-0003 — Audio output is a micro-speaker, not bone conduction
 
-**Status:** Accepted. See §6 for rationale (skull-contact requirement makes bone
-conduction unsuitable for a free-hanging pendant; collarbone is its worst
-location).
+**Status:** Accepted. Bone conduction needs skull contact a pendant can't provide
+(collarbone is its worst location); a micro-speaker is the only reliably
+intelligible option. Caveat: weak outdoors, not private; optional BT-earbud
+fallback.
 
-### ADR-0004 — The companion app is Flutter, with a pure-Dart `pneuma-core` engine
+### ADR-0004 — No companion app; one-time on-device web provisioning
 
-**Status:** Accepted.
+**Status:** Accepted. (Replaces the earlier Flutter-app decision.)
 
-**Context.** The app must do BLE, on-device WebRTC (OpenAI Realtime) + WebSocket
-(Gemini Live), secure credential storage, and the provider router — on both iOS
-and Android, as an open-source project that wants contributors.
+There is no phone app. First-run configuration (API key, model choice, eSIM
+profile, memory seed) is served by a web page the **device itself** hosts over a
+temporary setup link (BLE/Wi-Fi SoftAP/USB), reachable from any browser, then
+disabled. See [`PROVISIONING.md`](PROVISIONING.md).
 
-**Decision.** Build the app in **Flutter**, with all provider/router/session/BLE
-logic in a **pure-Dart `pneuma-core`** package that has no UI/OS dependencies.
-
-**Rationale.** Single cross-platform codebase; mature BLE/WebRTC/WebSocket
-libraries; `pneuma-core` is reusable headless inside an optional self-hosted hub;
-precedent set by Omi's Flutter app. React Native/Expo is the main alternative.
-See [`APP.md`](APP.md) §4.
-
-### ADR-0005 — Default topology is direct-to-provider; the hub is optional
+### ADR-0005 — Ephemeral device with a single bounded memory file
 
 **Status:** Accepted.
 
-**Context.** "Bring your own LLM" with a credible privacy story requires deciding
-whether a Pneuma-operated server sits between the user and their model.
+The device retains **no** conversation/audio/photo history. The only persistent
+state is one bounded (~KB), model-curated, on-device, user-resettable, portable
+memory file (see §5). This is the privacy foundation and the product's identity
+(*pneuma* = breath vs. spirit).
 
-**Decision.** **No Pneuma server by default.** The app talks directly to the
-user's chosen provider; keys and audio go phone → provider only. A self-hostable
-**Pneuma hub** (running the same `pneuma-core` headless) is an *optional* path for
-local-model / off-grid / shared-household use.
+### ADR-0006 — Thermal: passive spreading + on-demand duty-cycling, no active cooling
 
-**Consequences.** The trust story is clean (no middleman); Tier-2 composed
-pipelines and local models run from the app or the user's own hub, never our
-infrastructure. See [`APP.md`](APP.md) §3.
+**Status:** Accepted.
+
+An active heat exchanger isn't feasible at pendant scale. The device stays within
+the ≤43 °C skin limit by **not generating heat continuously** (on-demand bursts,
+via the wake island) plus **passive graphite/Cu spreading** to an outward
+radiating face with skin-side insulation. Continuous streaming — the regime that
+throttled the Ai Pin — is explicitly avoided.

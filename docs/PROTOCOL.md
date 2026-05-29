@@ -1,94 +1,68 @@
-# Pneuma — BLE Protocol (firmware ↔ app contract)
+# Pneuma — Internal Interfaces
 
-This is the agreement the **pendant firmware** and the **companion app** must both
-implement. It is the seam between the two halves of the project; keep it stable
-and versioned. Status: **draft v0** (pre-implementation — expect revision once
-validated on the bench).
+With no phone and no app, the important seam is **inside** the device: between the
+always-on **wake island** (MCU) and the on-demand **session brain** (Linux SoC).
+This is the contract the two firmwares must share. (The earlier phone↔app BLE
+protocol is gone with the companion app — see ADR-0004.)
 
-Transport: **Bluetooth Low Energy**, GATT. Request **2M PHY**, **Data Length
-Extension**, and a large **ATT MTU (~247+)** at connection — these are what make
-sub-1s JPEG transfer possible (see [`RESEARCH.md`](RESEARCH.md) §6).
-
-> UUIDs below are placeholders (`PNxx...`). Assign real 128-bit UUIDs from a single
-> base when implementation starts.
+Status: **draft v0** (pre-implementation; expect revision after bench bring-up).
 
 ---
 
-## Services overview
+## Wake island ↔ Session SoC
 
-| Service | UUID | Purpose |
-|---------|------|---------|
-| Battery (standard) | `0x180F` | Battery level |
-| Device Information (standard) | `0x180A` | Model, firmware revision |
-| **Pneuma Control** | `PN01...` | Device state, events, commands |
-| **Pneuma Audio** | `PN02...` | LC3 mic uplink + speaker downlink |
-| **Pneuma Camera** | `PN03...` | On-demand capture + chunked JPEG |
+Physical link: **UART** (control) + a **power-enable GPIO** (wake island → PMIC/SoC).
 
----
+### Power control
+- `SOC_EN` (GPIO, wake island → PMIC): assert to boot/resume the SoC + permit
+  modem power; deassert (after the SoC acks "sleep") to cut the session tier.
 
-## Pneuma Control Service (`PN01...`)
+### Control messages (UART, line- or TLV-framed)
 
-| Characteristic | Props | Payload |
-|----------------|-------|---------|
-| **State** | Notify | 1 byte enum: `0 idle · 1 listening · 2 capturing · 3 streaming · 4 speaking · 5 error` |
-| **Event** | Notify | 1 byte enum: `0 wakeword · 1 button_tap · 2 button_double · 3 button_long`, + 1 byte detail |
-| **Command** | Write | opcode + args (see below) |
+Wake island → SoC:
+| Msg | Meaning |
+|-----|---------|
+| `WAKE reason=wakeword` | wake word detected — start a session |
+| `WAKE reason=button tap\|double\|long` | button event |
+| `BATT level=NN` | battery state (if the gauge is on the island) |
+| `CANCEL` | user dismissed / timeout before SoC ready |
 
-**Command opcodes (app → pendant):**
-- `0x01 SET_STATE` — force a state (e.g. start/stop listening for push-to-talk).
-- `0x02 PLAY_EARCON` — play a built-in cue (listening / done / error).
-- `0x03 SET_LED` — RGB + pattern.
-- `0x04 SET_HAPTIC` — DRV2605L effect id.
-- `0x05 SET_VOLUME` — 0–100.
+SoC → wake island:
+| Msg | Meaning |
+|-----|---------|
+| `READY` | session tier up, modem attaching |
+| `STATE listening\|capturing\|conversing\|speaking\|error` | drive LED/haptic cues |
+| `SLEEP` | session done; island may cut `SOC_EN` |
+| `LED ...` / `HAPTIC ...` | request a cue (if island owns LED/LRA) |
 
----
-
-## Pneuma Audio Service (`PN02...`)
-
-| Characteristic | Props | Payload |
-|----------------|-------|---------|
-| **MicStream** (pendant → app) | Notify | `[seq:1][LC3 frame(s)]` — uplink voice |
-| **SpeakerStream** (app → pendant) | Write No Response | `[seq:1][LC3 frame(s)]` — downlink TTS/voice reply |
-| **AudioConfig** | Read | codec id, sample rate (e.g. 16 kHz), frame size |
-
-- Codec: **LC3** (LE Audio native to nRF5340). A fallback PCM16 mode may be
-  advertised for debugging.
-- Framing follows the Omi-style pattern (small fixed frames per notification) to
-  fit BLE MTU; `AudioConfig` declares the exact frame geometry.
+The wake island owns the always-on UX (wake chime, "listening" LED) so cues fire
+instantly without waiting for the SoC to boot; the SoC takes over cues once
+`READY`.
 
 ---
 
-## Pneuma Camera Service (`PN03...`)
+## Session brain ↔ Provider (cloud)
 
-| Characteristic | Props | Payload |
-|----------------|-------|---------|
-| **CaptureControl** (app → pendant) | Write | `0x01 CAPTURE [res:1][quality:1]` · `0x02 ABORT` |
-| **ImageTransfer** (pendant → app) | Notify | chunked JPEG (see below) |
-| **CaptureStatus** (pendant → app) | Notify | `0 capturing · 1 transferring · 2 done · 3 error` |
+Runs on the SoC; see [`ARCHITECTURE.md`](ARCHITECTURE.md) §3 for the
+`RealtimeProvider` / `ComposedProvider` abstraction. Summary:
 
-**ImageTransfer framing:**
-- First packet (header): `[0x00][frame_id:1][total_size:4 LE][res:1]`
-- Data packets: `[seq:2 LE][jpeg bytes...]` until `total_size` received.
-- App reassembles by `frame_id`/`seq`; on gap, request retransmit via
-  `CaptureControl` (or restart capture).
-
-**Flow:** app writes `CAPTURE` → firmware closes the camera load switch, grabs one
-JPEG from the ArduCAM SPI FIFO → streams it over `ImageTransfer` → opens the load
-switch (camera off). One frame per request; **no continuous video**.
+- **Transport:** WebRTC or TLS-WebSocket over the cellular (Cat-1 bis) link.
+- **Up:** LC3/Opus audio; on-demand a single JPEG (from the camera ISP).
+- **Down:** audio reply (native, or from cloud TTS in composed mode).
+- **Context:** the [memory file](MEMORY.md) is injected at session start; updates
+  applied on session end.
+- **Auth:** key from encrypted storage; ephemeral tokens where the provider
+  supports them.
 
 ---
 
-## Connection lifecycle
+## Camera (on-demand)
 
-1. Pendant advertises (low duty cycle when idle).
-2. App connects → negotiates 2M PHY + DLE + MTU.
-3. App subscribes to State/Event/MicStream/CaptureStatus/ImageTransfer notifies.
-4. Steady state: pendant notifies wake/button events; app drives sessions and
-   downlinks audio; camera frames flow only on explicit `CAPTURE`.
-5. Battery via standard Battery Service.
+- SoC asserts `CAM_EN` → camera powers up → one frame captured via MIPI-CSI ISP →
+  JPEG → sent to provider → `CAM_EN` deasserted (camera off). No video, no
+  retention.
 
-## Security
+## Provisioning transport
 
-- Use BLE bonding (LE Secure Connections) for the pendant↔app link.
-- **No provider credentials ever traverse BLE** — they stay in the app's secure
-  enclave (see [`APP.md`](APP.md) §1).
+Setup-only (BLE / Wi-Fi SoftAP / USB), enabled during provisioning and disabled
+after. See [`PROVISIONING.md`](PROVISIONING.md).

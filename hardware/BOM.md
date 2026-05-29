@@ -1,114 +1,105 @@
 # Pneuma — Bill of Materials & Interconnect
 
-Hardware core for the Pneuma pendant: a **single Nordic nRF5340** driving an
-**ArduCAM Mega SPI camera**, with native audio in/out and BLE. Rationale is in
-[`../docs/ARCHITECTURE.md`](../docs/ARCHITECTURE.md) (ADR-0001); the evidence is
-in [`../docs/RESEARCH.md`](../docs/RESEARCH.md).
+Hardware for the **standalone cellular** Pneuma device: an always-on **wake-island
+MCU** that powers an on-demand **Linux session SoC** + **LTE Cat-1 bis modem** +
+camera. Rationale: [`../docs/ARCHITECTURE.md`](../docs/ARCHITECTURE.md) (ADR-0001,
+-0006); evidence: [`../docs/RESEARCH.md`](../docs/RESEARCH.md).
 
-> **Altitude note.** This is a *block-level* BOM and interconnect map — enough to
-> order parts and breadboard the system, and to drive the firmware peripheral
-> setup. It is **not** a schematic: exact passives (decoupling, pull-ups,
-> matching network), the RF antenna layout, and final mechanical/enclosure design
-> come after this is validated on the bench. Prices are rough and for one-off
-> quantities.
+> **Altitude note.** Block-level BOM + interconnect — enough to order parts and
+> prototype, and to structure the firmware. Not a schematic: exact passives, PMIC
+> rails, RF matching/antenna, thermal stackup, and mechanical come after bench
+> validation. Prices are rough, one-off.
 
 ---
 
 ## 1. Bill of materials
 
-| # | Block | Recommended part | Interface | ~Price | Notes / alternates |
-|---|-------|------------------|-----------|--------|--------------------|
-| 1 | **MCU + BLE** | Nordic **nRF5340** module — Raytac **MDBT53-1M** (certified, antenna onboard) | — | ~$10 | Alt: Fanstel module, or bare nRF5340 if you do your own RF. Seeed XIAO nRF52840 is a cheaper/more-accessible fallback but lacks the audio PLL / LC3 headroom. |
-| 2 | **Camera** | **ArduCAM Mega 3MP** SPI (on-chip JPEG) | SPI + 1 GPIO (power gate) | ~$30 | 5MP (autofocus) ~$40–50. SPI SCLK ≤ 8 MHz. |
-| 3 | **Microphone** | Infineon **IM69D130** (PDM MEMS, 69 dB SNR, 130 dBSPL AOP) | PDM (CLK + DATA) | ~$3 | Alt: Knowles SPH0645 (I2S, hobbyist-friendly), TDK T5838 (PDM + acoustic-activity wake). |
-| 4 | **Audio amp** | **MAX98357A** (I2S Class-D, 1.8 W @ 8 Ω) | I2S (BCLK/LRCLK/DIN) + SD GPIO | ~$6 (breakout) | Bare IC cheaper at volume. |
-| 5 | **Speaker** | 20 mm 8 Ω ~1 W micro speaker | amp output | ~$2 | Fire upward toward the face. |
-| 6 | **Haptics** | LRA + **TI DRV2605L** driver | I2C + EN GPIO | ~$4 | LRA > ERM (crisper, lower power). |
-| 7 | **Indicator** | RGB LED (common-cathode) or single WS2812 | 3× GPIO (or 1 for WS2812) | ~$0.50 | Glanceable state, redundant w/ haptics. |
-| 8 | **Button** | momentary tactile switch | GPIO (interrupt + wake) | ~$0.20 | tap / double-tap / long-press. |
-| 9 | **Charger** | Microchip **MCP73831** (500 mA linear LiPo) | USB-C VBUS → BAT | ~$1 | Alt: TI **BQ25180** (I2C, tiny, ship-mode) for the smallest build. |
-| 10 | **Fuel gauge** | Analog Devices **MAX17048** (<5 µA, no sense R) | I2C | ~$2 | Optional but recommended for battery %. |
-| 11 | **Camera power gate** | Load switch **TPS22919** (µA-class off-leakage) | controlled by 1 GPIO | ~$0.50 | Keeps the camera fully off except during capture. |
-| 12 | **Battery** | LiPo pouch ~250 mAh (single cell, 3.7 V) | via charger/PMIC | ~$5 | 250 mAh ≈ sweet spot (~33–67 h listening). 500 mAh for ~2× runtime. |
-| 13 | **USB-C** | USB-C receptacle + 2× 5.1 kΩ CC pulldowns | VBUS → charger; D+/D- → nRF USB (DFU) | ~$1 | Charging + firmware DFU/flashing. |
-| 14 | **Regulation** | nRF5340 **internal DC/DC** (enable it) + LDO/buck for 3.3 V camera rail | — | ~$1 | nRF current specs assume DC/DC on. |
+| # | Block | Recommended part | ~Price | Notes / alternates |
+|---|-------|------------------|--------|--------------------|
+| 1 | **Wake island MCU** | Nordic **nRF52840** module | ~$5 | Always-on KWS + button + power control + BLE (setup). Alt: **Syntiant NDP120** (<1 mW KWS + beamforming) as a front-end. |
+| 2 | **Session SoC** | Rockchip **RV1106(G3)** (Cortex-A7 + ISP + ~0.5–1 TOPS NPU) | ~$8–12 | Tiny Linux; native MIPI camera ISP + HW JPEG. Alt: Allwinner V851S, NXP i.MX 8M (more power/heat). |
+| 3 | **Cellular modem** | Quectel **EG915U** (LTE Cat-1 bis, ~24×20×2.4 mm) | ~$8–15 | Single antenna, full-duplex, data-only (voice-over-data). Alt: Sequans Calliope 2, Telit ELS63. |
+| 4 | **Camera** | small **MIPI-CSI** sensor (e.g. OV/GC 2–5 MP) via RV1106 ISP | ~$3–8 | On-demand single JPEG; power-gated off otherwise. |
+| 5 | **Microphone** | Infineon **IM69D130** (PDM MEMS) | ~$3 | Monitored by wake island for KWS; routed to SoC in session. |
+| 6 | **Audio amp** | **MAX98357A** (I2S Class-D) | ~$6 | Driven by SoC I2S during sessions. |
+| 7 | **Speaker** | 20 mm 8 Ω ~1 W | ~$2 | Fire upward toward the face. |
+| 8 | **Haptics** | LRA + **DRV2605L** | ~$4 | State cues. |
+| 9 | **Indicator** | RGB LED (or WS2812) | ~$0.50 | + earcons. |
+| 10 | **Button** | momentary tactile | ~$0.20 | To wake island (wake / push-to-talk / power). |
+| 11 | **SIM** | **SGP.32 eSIM** or on-die **iSIM** | ~$1–3 | Remote-provisionable, no UI. iSIM (e.g. Sony ALT-class) saves most space. |
+| 12 | **PMIC / power-path** | power-path charger+regulator (e.g. TI BQ25xxx; or RV1106 ref PMIC) | ~$2–4 | Holds system rail up during modem TX while cell sags. |
+| 13 | **Bulk cap** | 100–470 µF low-ESR + MLCC array at modem VBAT | ~$1 | LTE = steady draw, no 2G spikes → no supercap needed. |
+| 14 | **Battery** | LiPo ~500–1000 mAh, single cell | ~$5–8 | Hours of talk / all-day on-demand. |
+| 15 | **Charger I/O** | USB-C receptacle + 5.1 kΩ CC pulldowns | ~$1 | Charging + initial flashing/provisioning. |
+| 16 | **Thermal** | graphite/Cu heat spreader + outward metal radiating face + skin-side insulator | ~$2–5 | Passive only (ADR-0006). |
+| 17 | **Antenna** | FPC PIFA (LTE), outward-facing, body standoff | ~$1 | Competes with thermal face for the outward side — layout tension. |
 
-Indicative core cost (one-off, ex-enclosure/PCB): **~$70–90**, dominated by the
-camera and module.
-
----
-
-## 2. Interconnect map (which nRF5340 peripheral talks to what)
-
-```
-                              ┌──────────────────────────┐
-        USB-C ──VBUS──▶ MCP73831 ──▶ LiPo 250mAh ──┐      │
-          │  (CC 5.1kΩ ×2)                          │      │
-          └── D+/D- ───────────────────────────────┼──────┤ nRF5340 USB (DFU/flash)
-                                                    │      │
-                                  ┌── 3V3 rail ◀────┘      │
-                                  │   (nRF internal DC/DC) │
-                                  ▼                        │
-   ┌─────────── SPI ────────────────────────┐             │
-   │  SCK, MOSI(→cam), MISO(←cam), CS        │── ArduCAM Mega (SPI slave, ≤8MHz)
-   │  + GPIO_CAM_EN ─▶ TPS22919 load switch ─┼──▶ camera 3V3 (gated ON only to shoot)
-   └─────────────────────────────────────────┘             │
-                                                            │
-   PDM:  GPIO_PDM_CLK ─▶ IM69D130 CLK                       │
-         IM69D130 DATA ─▶ GPIO_PDM_DIN                      │   nRF5340
-                                                            │  (app core:
-   I2S:  BCLK, LRCLK(WS), SDOUT ─▶ MAX98357A ─▶ speaker     │   audio + KWS;
-         GPIO_AMP_SD ─▶ MAX98357A shutdown                  │   net core: BLE)
-                                                            │
-   I2C (shared bus, pull-ups):                              │
-         SDA/SCL ─▶ DRV2605L (haptics)  ─ GPIO_HAP_EN       │
-         SDA/SCL ─▶ MAX17048 (fuel gauge)                   │
-                                                            │
-   GPIO: BUTTON ─▶ GPIO (IRQ + wake-from-sleep)             │
-         RGB LED ─▶ 3× GPIO  (or 1× GPIO → WS2812)          │
-                                                            │
-   SWD:  SWDIO / SWCLK pads (programming/debug)             │
-                              └──────────────────────────────┘
-```
-
-### Bus / pin allocation summary
-| Bus | nRF peripheral | Devices |
-|-----|----------------|---------|
-| SPI (≤8 MHz) | SPIM | ArduCAM Mega (slave) |
-| PDM | PDM | IM69D130 mic |
-| I2S | I2S | MAX98357A amp → speaker |
-| I2C | TWIM | DRV2605L, MAX17048 |
-| GPIO | — | button (IRQ/wake), camera load-switch EN, amp SD, RGB LED, haptic EN |
-| USB | USBD | charging + DFU/flashing |
-| SWD | — | debug/programming |
+Indicative core cost (one-off, ex-PCB/enclosure): **~$60–100**, dominated by SoC,
+modem, and camera.
 
 ---
 
-## 3. Power states (design targets, validate on bench)
+## 2. Interconnect map
 
-| State | Approx current | Notes |
-|-------|----------------|-------|
-| Deep sleep (button-wake only) | ~µA | System OFF; RAM off |
-| Idle, listening for wake word | ~3–8 mA | CPU + PDM + periodic BLE — the dominant state |
-| Streaming audio (in conversation) | ~5–10 mA | LC3 over BLE |
-| Camera capture (brief) | +55–150 mA | ArduCAM active; gated off otherwise |
-| BLE photo transfer (brief) | radio-bound | 10–50 KB JPEG in ~0.06–0.4 s @ 2M PHY |
+```
+   USB-C ──VBAT/charge──▶ PMIC (power-path) ──▶ system rails ──┬─────────────────────┐
+                                                              │                      │
+   ┌──────────── WAKE ISLAND (nRF52840, always on) ───────────┴───┐                  │
+   │  PDM mic (IM69D130) ─▶ wake-word KWS (DS-CNN/TFLM)            │                  │
+   │  BUTTON ─▶ GPIO (IRQ)                                         │                  │
+   │  BLE ─▶ provisioning (setup only)                            │                  │
+   │  GPIO_SOC_EN ─▶ SoC power enable (load switch / PMIC EN)      │                  │
+   │  UART  ◀───────────────────────────────────────────────────┐ │                  │
+   └────────────────────────────────────────────────────────────┼─┘                  │
+                                                                 │ control            │
+   ┌──────────── SESSION BRAIN (RV1106 Linux, on-demand) ────────┴──────────────────┐ │
+   │  UART  ◀─▶ wake island (wake reason, state, "done/sleep")                       │ │
+   │  USB / UART(PPP) ─▶ Quectel EG915U modem ──▶ [eSIM/iSIM] ──▶ FPC antenna        │◀┘
+   │  MIPI-CSI ◀─ camera sensor      GPIO_CAM_EN ─▶ camera power gate                 │
+   │  I2S ─▶ MAX98357A ─▶ speaker    PDM/I2S ◀─ mic (in session)                      │
+   │  I2C ─▶ DRV2605L (haptics), fuel gauge      GPIO ─▶ RGB LED                      │
+   │  SPI-NAND/eMMC ─▶ OS + memory file (encrypted)                                   │
+   └──────────────────────────────────────────────────────────────────────────────────┘
+```
 
-Battery life on 250 mAh (≈80% usable) at the dominant listening current:
-**~33–67 h** depending on duty cycle. (See RESEARCH.md for sourcing and caveats.)
+### Bus / interface summary
+| Interface | Between | Purpose |
+|-----------|---------|---------|
+| UART | wake island ↔ SoC | wake reason, state handshake, sleep |
+| GPIO (SOC_EN) | wake island → PMIC/SoC | power the session tier up/down |
+| USB or UART+PPP | SoC ↔ modem | cellular data link |
+| MIPI-CSI | camera → SoC ISP | on-demand JPEG |
+| I2S | SoC → amp | speaker audio |
+| PDM | mic → wake island (always) / SoC (session) | mic capture |
+| I2C | SoC ↔ DRV2605L, fuel gauge | haptics, battery |
+| BLE | wake island ↔ browser | one-time provisioning only |
+
+---
+
+## 3. Power & thermal targets (validate on bench)
+
+| State | Approx power | Notes |
+|-------|--------------|-------|
+| Sleep (wake island only) | µA–few mA | SoC + modem fully off |
+| Active session (streaming) | ~2–4 W | modem ~0.8 A + SoC; the heat driver |
+| Camera capture (brief) | + sensor power | gated off otherwise |
+
+- Skin-facing surface must stay **≤43 °C** (target ≤40–42 °C). Strategy: on-demand
+  bursts + passive graphite/Cu spreading to an outward face + skin-side insulation.
+- LTE draws steadily during a session (no 2 G micro-spikes) → single LiPo + bulk
+  cap + power-path PMIC; no supercap required.
+- Runtime: ~1–3 h continuous talk; all-day on the on-demand burst model.
 
 ---
 
 ## 4. Open items before schematic capture
 
-- [ ] Bench-validate single-JPEG-over-BLE transfer time on target phones (iOS +
-      Android negotiate PHY/connection interval and may cap throughput).
-- [ ] Bench-validate ArduCAM Mega JPEG size for typical scenes/quality (the
-      10–50 KB band is extrapolated, not from a spec table).
-- [ ] Select and train the Cortex-M wake-word model; measure real always-on KWS
-      current on the nRF5340 (no published benchmark found).
-- [ ] Decide camera resolution/quality default (QVGA–VGA keeps frames small;
-      higher res for "read this text" use cases at the cost of transfer time).
-- [ ] Confirm module choice (Raytac MDBT53-1M vs bare nRF5340 + own RF) and the
-      3.3 V camera rail regulator.
-- [ ] Antenna keep-out / placement for the chosen module (feeds enclosure design).
+- [ ] Confirm session SoC (RV1106 vs Allwinner V vs i.MX 8M) against the realtime
+      WebRTC/TLS + camera workload and its idle/boot-time power.
+- [ ] Validate wake-island → SoC cold-boot/resume latency (affects "feel").
+- [ ] Bench modem TX current + needed bulk capacitance on the chosen cell.
+- [ ] Thermal mock-up: measure skin-side temp during a sustained session; size the
+      graphite spreader; resolve antenna-vs-spreader contention for the outer face.
+- [ ] eSIM (SGP.32) vs iSIM module selection + data provider (Soracom/Hologram).
+- [ ] Camera sensor + lens choice (and default resolution/quality for transfer size).
+- [ ] Secure storage for keys + memory file (SoC secure boot / encrypted flash).
