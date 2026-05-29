@@ -29,8 +29,8 @@ camera. Rationale: [`../docs/ARCHITECTURE.md`](../docs/ARCHITECTURE.md) (ADR-000
 | 11 | **SIM** | **SGP.32 eSIM** or on-die **iSIM** | ~$1–3 | Remote-provisionable, no UI. iSIM (e.g. Sony ALT-class) saves most space. |
 | 12 | **PMIC / power-path** | power-path charger+regulator (e.g. TI BQ25xxx; or RV1106 ref PMIC) | ~$2–4 | Holds system rail up during modem TX while cell sags. |
 | 13 | **Bulk cap** | 100–470 µF low-ESR + MLCC array at modem VBAT | ~$1 | LTE = steady draw, no 2G spikes → no supercap needed. |
-| 14 | **Battery** | LiPo single cell; **~2000–2500 mAh fits the 40×80×20 envelope** | ~$6–10 | ~10 h+ talk / multi-day on-demand. Shrink later if slimming thickness. |
-| 15 | **Charging** | **portless** — Qi wireless coil *or* magnetic pogo-pin contacts | ~$2–5 | No USB-C (waterproofing + no data port needed; setup is over BLE/SoftAP). |
+| 14 | **Battery** | LiPo pouch ~**5–7 × 36 × 72 mm → ~2000–2500 mAh** (forms the thin slab) | ~$6–10 | ~10 h+ talk / multi-day on-demand. Shrink later if slimming thickness. |
+| 15 | **Charging** | **portless, magnetic pogo-pin** contacts | ~$2–4 | No USB-C; pogo not Qi (Qi won't pass the aluminum body). Setup is over BLE/SoftAP. |
 | 16 | **Thermal** | **aluminum unibody** (radiator) + TIM/pads on modem PA & SoC + graphite spreader + skin-side insulator | ~$3–8 | Body *is* the heat exchanger (ADR-0006/0007). Strap the 2 hot parts only. |
 | 17 | **Antenna** | FPC PIFA (LTE) behind a **non-conductive RF window**, isolated from the aluminum, edge-placed away from body | ~$1 | Metal body = Faraday cage; the window is mandatory (ADR-0007). |
 | 18 | **Waterproof seal** | printed **silicone gasket** | ~$1 | Seals body halves + around RF window; target IP68. |

@@ -31,8 +31,10 @@ the Ai Pin); Pneuma doesn't do that (ADR-0006).
 **Skin-side caveat:** the body also contacts the chest, and metal feels hot faster
 than plastic (effusivity). The **≤43 °C** limit applies to the skin-facing metal.
 So **radiate from the outward face; insulate / stand off the skin side** (low-
-conductivity layer between hot side and skin). Short bursts likely stay well under
-the limit; design for the long-session case anyway.
+conductivity layer between hot side and skin). The thin-slab + plateau layout (§4)
+does this structurally: hot parts live in the **outward aluminum plateau**, the
+skin side is the **cool battery slab**. Short bursts likely stay well under the
+limit; design for the long-session case anyway.
 
 ---
 
@@ -45,8 +47,10 @@ designed back in:
   water. One also serves as the **pressure-equalization vent** a sealed device
   needs.
 - **Portless charging** — no USB-C (a port is the worst waterproofing weak point,
-  and we need no data port: setup is app-less over BLE/SoftAP). Use **Qi wireless**
-  or **magnetic pogo-pin** contacts. Removes a hole and simplifies the gasket.
+  and we need no data port: setup is app-less over BLE/SoftAP). With an **aluminum
+  body, lean magnetic pogo-pin** contacts: Qi won't pass through aluminum (same
+  Faraday issue as the antenna), so wireless would need yet another non-metal
+  window. Pogo removes a hole and avoids that.
 - **Sealed RF window** — the gasket seals *around* the antenna window (§3).
 
 (Conduction-only cooling is unaffected by sealing — there's no airflow at this
@@ -72,26 +76,39 @@ Get these two zones not overlapping/fighting and the layout resolves.
 
 ---
 
-## 4. Size — target envelope
+## 4. Form factor & size — thin slab + plateau (iPhone-Air-style)
 
-**Target: ~40 × 80 × 20 mm (≈ 64 cm³)** — roughly a bit smaller than a deck of
-cards. This is *roomy*, well above the parts' minimum, and the slack is useful:
+**Envelope: ~40 × 80 mm footprint**, but *not* a uniform 20 mm brick. Instead two
+zones:
 
-- **Fits easily.** The space drivers (modem 24×20×2.4 mm, battery) are nowhere near
-  tight in 64 cm³.
-- **Big battery.** A ~2000–2500 mAh cell fits comfortably → ~10 h+ continuous talk,
-  multi-day on the on-demand model. (The runtime worry goes away at this size.)
-- **Thermal headroom.** ~112 cm² of outer surface + room for real aluminum mass →
-  the skin-temp limit is comfortable, not marginal. This is the envelope where the
-  heat-exchanger plan clearly works.
+```
+        ┌──────── plateau / bump ────────┐   ← ~14–18 mm
+   ┌────┤  camera · SoC · modem · speaker├─────────────────┐
+   │    └────────────────────────────────┘                 │  ← thin slab ~8–10 mm
+   │  battery slab + PCB                                    │
+   └───────────────────────────────────────────────────────┘
+     (skin side)
+```
 
-**Wearability flag:** 20 mm is chunky against the chest (the Ai Pin was ~8 mm); the
-40×80 footprint is fine. Plan: build the first mock-up at the full 20 mm (big
-battery + thermal mass, prove it out), then **diet toward ~10–14 mm** later by
-shrinking the battery — the on-demand model tolerates it.
+- **Thin slab (skin side):** battery + main PCB. Flat, cool, comfortable against
+  the chest.
+- **Plateau / bump (outward):** camera (lens depth), speaker (~3–5 mm cavity), SoC,
+  modem — the parts that need vertical room.
 
-Levers for slimming later: **iSIM** (no SIM tray), smaller battery, PCB stacking /
-flex-rigid, aluminum body as structure (no separate frame).
+**Battery dimensioning** (the slab is the battery): a LiPo pouch of roughly
+**5–7 mm × ~36 × ~72 mm** (≈ usable footprint less ~2 mm walls) yields
+**~2,000–2,500 mAh** at commodity density (~130–160 mAh/cm³). A ~6 mm cell → thin
+section ≈ 8–10 mm (battery + walls + PCB).
+
+**Thermal payoff:** put the hot parts (**modem PA + SoC**) in the **outward
+aluminum plateau** → the bump radiates *away from the body* while the cool battery
+slab sits against the skin. This resolves the radiator-vs-skin-contact tension by
+geometry (see §1).
+
+**Wearability:** average thickness well under 20 mm; a deliberate design language,
+not a brick. Levers to slim further later: **iSIM**, smaller battery (the
+on-demand model tolerates it), PCB stacking / flex-rigid, aluminum body as
+structure.
 
 ---
 
