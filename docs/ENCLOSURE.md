@@ -137,7 +137,25 @@ structure.
 
 ---
 
-## 5. Attachment / wear mode
+## 5. Enclosure openings (cutout sizes)
+
+Design-start sizes for every penetration, from the BOM parts. **Authoritative
+cutout = each part's datasheet "recommended panel cutout" / STEP** — confirm before
+final CAD. Every opening must be sealed by its matching method.
+
+| Opening | Cutout | Sealing | Notes |
+|---|---|---|---|
+| **USB-C** | mouth ~9.0 × 3.3 mm; plug recess ~12 × 7 mm | connector IP67 flange + gasket | Thin wall (≤~2 mm) / counterbore so the cable overmold seats. GCT USB4500 datasheet is authoritative. |
+| **Camera** | ~6 mm Ø aperture; clear window ~8 mm Ø | sealed clear window (sapphire/PC) | Clears SC3336 lens + ~98° FOV; chamfer inner edge to avoid vignetting. |
+| **Antenna** | non-metal RF window ≥ antenna footprint + ~3 mm keepout | gasket fills it (RF-transparent) | ⚠ antenna must be sized to fit (see below). |
+| **LED** | ~3 mm Ø window (or 1.5–2 mm light-pipe) | clear/translucent insert or translucent silicone | Light-pipe keeps the LED off the surface. |
+| **Mic** | ~1.0 mm Ø port | waterproof acoustic membrane | Membrane also serves as the pressure-equalization vent. |
+| **Speaker** | grille ~5–9 × 1.0–1.5 mm holes (or ~10 mm slotted) | acoustic membrane behind grille | Many small holes seal better than one big hole. |
+| **Button** | ~5 mm Ø | silicone dome / overmold over a tact switch | Or avoid the hole with a capacitive / Hall (magnet) button. |
+
+Add 0.1–0.3 mm clearance around connectors and account for gasket compression.
+
+## 6. Attachment / wear mode
 
 The Humane Ai Pin used a **magnetic clamp through fabric**: the Pin on the outside,
 a magnetic piece behind the cloth — either the passive **"Latch"** or the
@@ -155,8 +173,12 @@ Options: **magnetic clamp** (most "Pneuma," keep the inner piece dumb + cool),
 
 - [ ] Thermal mock-up: skin-side temp during a sustained session; size the TIM +
       graphite + Al mass; pick the skin-side insulator.
+- [ ] **Pick a smaller antenna that fits.** The BOM's Taoglas FXUB63 is ~96×21 mm —
+      longer than the 80 mm body. Select a ~40×10 mm-class LTE FPC antenna, then size
+      the RF window to its footprint + ~3 mm keepout.
 - [ ] RF window material + placement; antenna efficiency/SAR with the metal body
       present; confirm no thermal/antenna face conflict.
-- [ ] Charging method (Qi vs pogo) + sealing of the charge interface; coil heat if Qi.
+- [ ] Seal the USB-C interface: gasketed IP67 receptacle + panel-cutout per the GCT
+      datasheet; wall thinned/counterbored for plug-overmold clearance.
 - [ ] Acoustic membrane parts + port geometry for mic/speaker; vent placement.
 - [ ] Gasket geometry for a printed silicone seal; long-term seal/clamp design.
