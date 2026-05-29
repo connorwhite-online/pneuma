@@ -30,9 +30,11 @@ camera. Rationale: [`../docs/ARCHITECTURE.md`](../docs/ARCHITECTURE.md) (ADR-000
 | 12 | **PMIC / power-path** | power-path charger+regulator (e.g. TI BQ25xxx; or RV1106 ref PMIC) | ~$2–4 | Holds system rail up during modem TX while cell sags. |
 | 13 | **Bulk cap** | 100–470 µF low-ESR + MLCC array at modem VBAT | ~$1 | LTE = steady draw, no 2G spikes → no supercap needed. |
 | 14 | **Battery** | LiPo ~500–1000 mAh, single cell | ~$5–8 | Hours of talk / all-day on-demand. |
-| 15 | **Charger I/O** | USB-C receptacle + 5.1 kΩ CC pulldowns | ~$1 | Charging + initial flashing/provisioning. |
-| 16 | **Thermal** | graphite/Cu heat spreader + outward metal radiating face + skin-side insulator | ~$2–5 | Passive only (ADR-0006). |
-| 17 | **Antenna** | FPC PIFA (LTE), outward-facing, body standoff | ~$1 | Competes with thermal face for the outward side — layout tension. |
+| 15 | **Charging** | **portless** — Qi wireless coil *or* magnetic pogo-pin contacts | ~$2–5 | No USB-C (waterproofing + no data port needed; setup is over BLE/SoftAP). |
+| 16 | **Thermal** | **aluminum unibody** (radiator) + TIM/pads on modem PA & SoC + graphite spreader + skin-side insulator | ~$3–8 | Body *is* the heat exchanger (ADR-0006/0007). Strap the 2 hot parts only. |
+| 17 | **Antenna** | FPC PIFA (LTE) behind a **non-conductive RF window**, isolated from the aluminum, edge-placed away from body | ~$1 | Metal body = Faraday cage; the window is mandatory (ADR-0007). |
+| 18 | **Waterproof seal** | printed **silicone gasket** | ~$1 | Seals body halves + around RF window; target IP68. |
+| 19 | **Acoustic membranes** | Gore/Saati waterproof vents over mic + speaker | ~$1–2 | Pass sound, block water; one doubles as pressure-equalization vent. |
 
 Indicative core cost (one-off, ex-PCB/enclosure): **~$60–100**, dominated by SoC,
 modem, and camera.

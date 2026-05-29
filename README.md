@@ -59,6 +59,7 @@ pneuma/
 ├── README.md
 ├── docs/
 │   ├── ARCHITECTURE.md  ← system design, provider abstraction, ADRs
+│   ├── ENCLOSURE.md     ← aluminum body / thermal / waterproof / RF co-design
 │   ├── MEMORY.md        ← the memory-file spec (the "spirit")
 │   ├── PROVISIONING.md  ← one-time, app-less device setup
 │   ├── PROTOCOL.md      ← internal wake-island ↔ Linux-SoC interface
@@ -72,10 +73,13 @@ pneuma/
 
 A tiny always-on **wake-island MCU** (nRF52840 / Syntiant) + an on-demand **Linux
 SoC** (Rockchip RV1106-class) + a **Quectel EG915U** LTE Cat-1 bis modem + a MIPI
-camera, micro-speaker, mic, haptics, LED, and a ~500–1000 mAh LiPo with passive
-graphite thermal spreading. It's a tiny wearable Linux computer (Ai-Pin-class),
-engineered to dodge what killed the Ai Pin. Full BOM:
-[`hardware/BOM.md`](hardware/BOM.md); rationale in ADR-0001.
+camera, micro-speaker, mic, haptics, LED, and a ~500–1000 mAh LiPo. The
+**aluminum unibody doubles as the heat exchanger** (the hot parts strap to it,
+iPhone-17-Pro-style), it's **waterproof (IP68)** via a printed silicone gasket +
+acoustic membranes + portless charging, and the cellular antenna sits behind a
+non-metal RF window. Realistically small-puck / Ai-Pin-class — engineered to dodge
+what killed the Ai Pin. Mechanical co-design: [`docs/ENCLOSURE.md`](docs/ENCLOSURE.md);
+full BOM: [`hardware/BOM.md`](hardware/BOM.md); rationale in ADR-0001/0006/0007.
 
 ## License
 

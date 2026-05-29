@@ -197,17 +197,20 @@ Pneuma's strategy is to *not generate the heat continuously*:
 - **On-demand duty cycle** — the modem + SoC are off except during a session; the
   device bursts and sleeps, the regime that lets Apple Watch LTE and kids' GPS
   watches stay cool. (This is why the wake island exists.)
-- **Passive spreading** — graphite/copper spreader across the whole shell + a
-  deliberate outward radiating face, with insulation toward the skin. An *active*
-  heat exchanger is **not feasible** at pendant scale (a few cm² shed only
-  ~0.1–0.3 W/°C; no room/power for fans/pumps).
+- **Aluminum body as the heat exchanger** (cf. iPhone 17 Pro): strap the two heat
+  sources — the **modem PA** and the **SoC** — through TIM + graphite into the
+  **aluminum unibody**, which radiates. On-demand bursts dump little energy into a
+  large metal mass, so temperature barely rises. An *active* heat exchanger is
+  **not feasible** at this scale (a few cm² shed only ~0.1–0.3 W/°C; no room/power
+  for fans/pumps) — the body *is* the spreader. Radiate from the outward face;
+  insulate the skin side (metal must stay ≤43 °C against skin).
 - **Power** — LTE draws a steady ~0.7–0.8 A while connected (no 2 G micro-spikes),
   so a single LiPo + bulk cap + power-path PMIC suffices. Runtime ≈ hours of
   active talk; all-day on the on-demand model.
 
-Tension to design around: the antenna *and* the heat spreader both want the
-outward (away-from-body) face — a real pendant-scale layout conflict for the
-enclosure phase. See ADR-0006.
+The aluminum body, the waterproof seal, and the antenna all interact (a metal body
+is a Faraday cage, so the antenna needs a non-metal RF window) — designed together
+in [`ENCLOSURE.md`](ENCLOSURE.md). See ADR-0006 and ADR-0007.
 
 ---
 
@@ -293,3 +296,23 @@ the ≤43 °C skin limit by **not generating heat continuously** (on-demand burs
 via the wake island) plus **passive graphite/Cu spreading** to an outward
 radiating face with skin-side insulation. Continuous streaming — the regime that
 throttled the Ai Pin — is explicitly avoided.
+
+### ADR-0007 — Aluminum unibody as heat spreader; portless waterproof; non-metal RF window
+
+**Status:** Accepted.
+
+**Decision.** Use an **aluminum unibody** as both structure and heat exchanger
+(hot parts strapped to it via TIM + graphite); make the device **waterproof
+(target IP68)** with a printed silicone gasket, acoustic membranes for mic/speaker,
+and **portless charging** (Qi or magnetic pogo, no USB-C); and place the cellular
+antenna behind a **non-conductive RF window** in the body, isolated from the metal.
+
+**Rationale.** A metal body is the best passive spreader *and* a Faraday cage, so
+the antenna must get a deliberate non-metal window; the outward face is contended
+between radiator and antenna and is resolved in 3D (radiator + sides aluminum; RF
+window at an edge, away from the body). Eliminating the USB-C port both improves
+waterproofing and is free (setup is app-less over BLE/SoftAP).
+
+**Consequences.** Bigger than a tiny pendant (small-puck/Ai-Pin class); the
+enclosure becomes a real co-design of thermal + RF + sealing. Detailed in
+[`ENCLOSURE.md`](ENCLOSURE.md).
