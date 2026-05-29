@@ -116,6 +116,10 @@ zones:
 - **Plateau / bump (outward):** camera (lens depth), speaker (~3–5 mm cavity), SoC,
   modem — the parts that need vertical room.
 
+This maps to a **two-board stack** — a main/battery board in the slab and a
+SoC+modem board in the plateau, joined by one board-to-board connector or short
+flex; camera/antenna/speaker/mic/USB-C hang off on flex/JST (see BOM interconnect).
+
 **Battery dimensioning** (the slab is the battery): the standard off-the-shelf cell
 is **~8 × 36 × 60 mm / 2,000 mAh** (e.g. PKCell LP803860, single-unit orderable) →
 thin section ≈ 10–11 mm. A thinner/longer cell (~5–7 × 36 × ~72 mm, same ~2,000–

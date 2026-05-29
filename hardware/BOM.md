@@ -98,6 +98,34 @@ by the SoC board, modem, and battery.
 | I2C | SoC ↔ DRV2605L, fuel gauge | haptics, battery |
 | BLE | wake island ↔ browser | one-time provisioning only |
 
+### Physical interconnect: bench vs. enclosure
+
+This device **can't be classically breadboarded** — the modem (USB), SoC↔camera
+(MIPI-CSI), and antenna (RF) links break over jumper wires. Connect by bus speed:
+
+**Bench (dev boards, not raw chips):**
+- **Slow buses → Dupont jumpers** (optionally on a solderless breadboard hosting
+  breakouts): I²C, UART, GPIO, power.
+- **Fast/special links → native cables, never jumpers:** camera = FFC ribbon;
+  modem = USB cable; antenna = U.FL coax pigtail.
+- Boards: Luckfox Pico (RV1106), a Cat-1 modem carrier/HAT, nRF52840 dev kit,
+  Adafruit/SparkFun breakouts (amp/mic/haptics). Optional next step: protoboard or
+  a carrier PCB the modules plug into via headers.
+
+**Enclosure (soldered, custom PCB):**
+| Connector | Use |
+|-----------|-----|
+| Board-to-board (Hirose DF40 / BTB) | stack the two PCBs (slab ↔ plateau) |
+| FFC/FPC flex (Molex/Hirose 0.5–1.0 mm) | camera; routing around corners |
+| JST-PH / JST-SH | battery, speaker (removable) |
+| U.FL / IPEX MHF | modem → FPC antenna coax |
+| Pogo pins | programming/test points |
+
+Maps to a **two-board stack**: main/battery board (slab) + SoC+modem board
+(plateau), joined by one BTB connector or short flex; camera/antenna/speaker/mic/
+USB-C hang off on flex/JST. USB and MIPI need impedance-controlled traces (a
+KiCad PCB job, not hand wiring).
+
 ---
 
 ## 3. Power & thermal targets (validate on bench)
