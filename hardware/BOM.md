@@ -46,40 +46,52 @@ camera. Rationale: [`../docs/ARCHITECTURE.md`](../docs/ARCHITECTURE.md) (ADR-000
 Indicative core electronics cost (qty 1, ex-PCB/enclosure): **~$90–130**, dominated
 by the SoC board, modem, and battery.
 
-### Prototyping path (before a custom PCB)
-- **Brain — don't buy the $25 Ultra to start.** The session app already builds +
-  runs on your **laptop** (mocks, no hardware). When you need to validate real
-  camera/audio/modem I/O on Linux, use a **Raspberry Pi you may already own** (Zero
-  2 W ~$15: CSI camera + USB modem + audio + runs the Rust binary), or the **base
-  [Luckfox Pico](https://www.luckfox.com/Luckfox-Pico) (~$8)** for RV1106-native
-  bring-up. Reserve the RV1106 for the custom PCB (it's a bare chip there anyway).
-- **Cellular without reflow:** [**LilyGO T-A7670G R2**](https://lilygo.cc) (SIMCom
-  A7670 Cat-1 + SIM slot + USB + charger), ~$18–23, or the
-  [Waveshare SIM7670G Cat-1 HAT](https://www.waveshare.com/sim7670g-lte-cat-1-gnss-hat.htm)
-  (~$28) — get the cellular link working, then move to a bare EG915U on your own
-  PCB ([its SnapEDA footprint](https://www.snapeda.com/search/?q=EG915U) gives the pads).
-- **Breadboard the rest:** Adafruit breakouts for the mic (`4346`), amp (`3006`),
-  haptics (`2305`), charger (`4755`) — solder later.
+### Development path (cost-optimized — don't buy a pile of breakouts)
 
-### Order checklist — what's actually single-unit buyable now (bench)
-**Buy:** cellular dev board (LilyGO T-A7670G R2 *or* Waveshare SIM7670G HAT — includes
-SIM slot + antenna) · removable IoT SIM (Soracom Plan01s / Hologram, single unit) ·
-brain (a Raspberry Pi you own, or base Luckfox Pico ~$8) · camera (SC3336, or a Pi
-cam) · Adafruit breakouts: amp `3006`, mic `4346`, haptics `2305` + Vybronics LRA,
-charger `4755`, LED `1938` · speaker (PUI AS01808MR-R or Adafruit `3923`) · battery
-(Adafruit `2011`) · nRF52840 board (Adafruit `4078` / XIAO) · (optional) Microchip
-**BM83 EVB** for the BT-audio spike.
+What needs validating before a custom PCB is mostly **software/integration, not
+tuning** — and it's cheap to retire on **one or two integrated dev boards**, not a
+bag of breakouts. The actual *tuning* (RF, power, thermal) can't be done until the
+real board + enclosure exist, so it happens *on* the PCB regardless (plan ≥2 spins).
 
-**Do NOT order yet (production-PCB / not single-unit):** bare Quectel EG915U (reflow
-LGA → use the dev board) · MFF2 eSIM chip (→ removable SIM) · Gore GAW331 vent (MOQ →
-generic ePTFE membrane for proto) · Pulse W3796 SMD antenna (the dev board has its
-own) · bare ICs (use the breakouts above).
+**Recommended dev kit (~$55–65, validate → then commit the PCB):**
+- **Laptop** — the Rust session app already runs here (mocks). **$0.**
+- **Luckfox Pico Ultra (~$30)** — one board that *is* RV1106 + onboard audio codec +
+  mic + Wi-Fi/BT + camera connector + eMMC. It replaces ~5 breakouts, and it's the
+  right board to answer the **make-or-break BT-audio question** (same AIC8800-class BT
+  you'd ship). *(This supersedes the earlier "skip the Ultra" note — for a
+  no-breakouts plan the Ultra is the cheapest path once you count the parts it bundles.)*
+- **Cellular board (~$20–28)** — [LilyGO T-A7670G R2](https://lilygo.cc) or
+  [Waveshare SIM7670G HAT](https://www.waveshare.com/sim7670g-lte-cat-1-gnss-hat.htm)
+  (modem + SIM slot + antenna) to bring up the realtime cellular loop.
+- **IoT SIM (~$5)** + a **small speaker (~$2)**. *(optional)* **BM83 EVB** only if you
+  want to prove the dedicated-chip A2DP path specifically.
+- **Skip** the mic/amp/Wi-Fi/charger/LED breakouts — redundant with the Pico Ultra.
+
+**If you own a Raspberry Pi:** use it for the cloud/architecture proof ($0; *not* the
+real SoC), then treat custom-PCB spin #1 as your RV1106 bring-up — saves the Ultra,
+but accepts RV1106-specific risk (its BT/ISP/power) landing first on a real board.
+
+**Straight to a custom PCB as board-spin-1?** You *can* bench a custom board — but for
+*this* stack it's a gamble, because two unknowns are painful to discover on a ~$300
+board yet trivial on a $30 one:
+1. **Does A2DP-to-earbuds actually work** on your chosen BT path?
+2. **Does the RV1106 run app + camera + modem concurrently** under your stack?
+Find those on the Pico Ultra + cellular board first; *then* lay out the PCB.
+
+**What you genuinely can't pre-tune (so expect ≥2 PCB spins regardless):** antenna
+matching + 4-radio co-existence, the RF window, power-path under modem TX bursts, and
+skin-side thermals — all need the real board in the real enclosure. So you're right
+that there's little *pre-PCB tuning* — but a ~$60 integration spike still saves a
+wasted spin.
+
+**Production-only (don't order now):** bare Quectel EG915U (reflow → dev board), MFF2
+eSIM chip (→ removable SIM), Gore vent (MOQ → generic ePTFE for proto), Pulse W3796
+antenna (dev board has its own), bare ICs (the Ultra/EVB cover them).
 
 **Link caveats:** Digi-Key / SnapEDA links are *search-by-part-number* (always
-resolve + show live stock); manufacturer deep links (gct.co, vybronics) may drift —
-the **part number is the durable reference**. Confirm the **SC3336 FFC pin count
-(15P vs 20P)** for your board, and the **BM83 "AT"/source-firmware** variant before
-ordering.
+resolve + show stock); vendor deep links may drift — the **part number is the durable
+reference**. Confirm the **SC3336 FFC pin count (15P vs 20P)** and the **BM83
+"AT"/source firmware** before ordering.
 
 ### Sourcing gotchas + workarounds
 - **EG915U is reflow-only** (LGA-126). Prototype on the LilyGO A7670 board; reflow
