@@ -23,7 +23,8 @@ camera. Rationale: [`../docs/ARCHITECTURE.md`](../docs/ARCHITECTURE.md) (ADR-000
 | # | Block | Orderable part | Buy at | ~$ | CAD/STEP | Notes |
 |---|-------|----------------|--------|----|----------|-------|
 | 1 | **Cellular modem** | **Quectel EG915U-EU** (Cat-1 bis, LGA-126, 23.6×19.9×2.4 mm) | [LCSC `C5248292`](https://jlcpcb.com/partdetail/Quectel-EG915UEU/C5248292) · [4gltemall](https://www.4gltemall.com/quectel-eg915u.html) | 8–12 | [SnapEDA](https://www.snapeda.com/search/?q=EG915U) | Design part; LGA = **reflow only** (see prototyping path). |
-| 2 | **Session SoC** | **Luckfox Pico Ultra** (RV1106G3, 256 MB, 8 GB eMMC, MIPI-CSI) | [Luckfox](https://www.luckfox.com/EN-Luckfox-Pico-Ultra) · [Waveshare](https://www.waveshare.com/luckfox-pico-ultra.htm) | 23–28 | [wiki `.step`](https://wiki.luckfox.com/Luckfox-Pico-RV1106/Downloads/) | **50×50 mm bench board** (full RJ45 + USB-A = dev-only, omit for the wearable). Productize on a custom **bare-RV1106** PCB. Alt: Pico Max (~$13). |
+| 2 | **Session SoC** | **Rockchip RV1106G3** (256 MB — the G3 RAM matters for the TLS/audio stack) | proto: [Luckfox Pico Ultra](https://www.luckfox.com/EN-Luckfox-Pico-Ultra) · [Waveshare](https://www.waveshare.com/luckfox-pico-ultra.htm) | 23–28 | [wiki `.step`](https://wiki.luckfox.com/Luckfox-Pico-RV1106/Downloads/) | Confirmed by SoC deep pass (RESEARCH §8 / ADR-0009). Pico Ultra is a 50×50 bench board (RJ45/USB-A dev-only); productize on a custom **bare-RV1106G3** PCB. **Fallback if you want one-chip BT: RK3566** (mature BlueZ, but ~1.2 W idle, bigger). |
+| 2b | **Bluetooth-audio chip** | **Microchip BM83** (BM83SM1-00Tx, AT/source firmware) | [DigiKey](https://www.digikey.com/en/products/result?keywords=BM83SM1-00TA) · [Microchip](https://www.microchip.com/en-us/product/bm83) | ~12 | [Microchip BM83](https://www.microchip.com/en-us/product/bm83) | Owns A2DP **source** + HFP (earbud mic) + AAC via I²S + UART — offloads BT audio off the RV1106's weak BlueZ (ADR-0009). Needs its own 2.4 GHz antenna. |
 | 3 | **Camera** | **SC3336 3MP Module (B)** (MIPI-CSI, F2.0) | [Waveshare](https://www.waveshare.com/sc3336-3mp-camera-b.htm) · luckfox.com | 9 | ✘ measure | Luckfox-native FFC; **confirm 15P vs 20P** against the Ultra connector. |
 | 4 | **Wake-island MCU** | **Raytac MDBT50Q-1MV2** (nRF52840, 10.5×15.5×2.05 mm) | [Adafruit `4078`](https://www.adafruit.com/product/4078) · [Digi-Key](https://www.digikey.com/en/products/result?keywords=MDBT50Q-1MV2) | 6 | [SnapEDA](https://www.snapeda.com/search/?q=MDBT50Q-1MV2) | nRF52840 does the always-on KWS itself (Syntiant dropped — see gotchas). BLE for setup. |
 | 5 | **Microphone** | **Infineon IM69D130V01XTSA1** (PDM, 4.0×3.0 mm) | [Digi-Key](https://www.digikey.com/en/products/result?keywords=IM69D130V01XTSA1) · breakout [Adafruit `4346`](https://www.adafruit.com/product/4346) | 2–3 | [SnapEDA](https://www.snapeda.com/search/?q=IM69D130) | Bottom-port. |
@@ -79,18 +80,13 @@ by the SoC board, modem, and battery.
   chip like u-blox MAX-M10 / Quectel L76) **+ a small GNSS antenna** (~7 mm GPS chip
   antenna, or a **cellular+GNSS combo flex** = one part, two U.FL leads). Enables the
   `get_location` / `directions` tools (ARCHITECTURE §8).
-- **Bluetooth audio out (AirPods / BT headphones) — table-stakes (ADR-0008).**
-  A2DP *source* (device → earbuds) for private/clear AI voice + music.
-  - **Path A (preferred, ~$0):** require a SoC/Wi-Fi-BT module with **BT-Classic +
-    A2DP via BlueZ** (mature on Linux; a Pi does it). Make this a hard SoC-selection
-    criterion — the RV1106 IPC BSP is BLE-leaning, so verify or pick a module that
-    exposes BR/EDR.
-  - **Path B (fallback, ~$5–8):** a **dedicated A2DP-*source* BT-audio chip** fed by
-    I2S (e.g. Qualcomm CSR8675, BlueCreation BC127 — must support *source*, not just
-    sink); it owns pairing + codecs.
-  - Either way: a **2.4 GHz BT antenna** (small chip, or shared with Wi-Fi) and a
-    pairing flow. Output routes via a second `AudioOut` HAL impl (speaker vs BT).
-    Optional **HFP** adds the earbud mic for discreet two-way.
+- **Bluetooth audio out (AirPods / BT headphones) — table-stakes (ADR-0008/0009).**
+  A2DP *source* for private/clear AI voice + music. **Decided: a dedicated
+  Microchip BM83** (row 2b) owns A2DP source + HFP + AAC via I²S, offloading the
+  RV1106's weak BlueZ — chosen over betting on the IPC BSP's Bluetooth. Adds a
+  **2.4 GHz BT antenna** + a pairing flow; output routes via a second `AudioOut` HAL
+  impl (speaker vs BT). (On an RK3566-class SoC you could instead use BlueZ A2DP
+  directly, ~$0 — the one-chip fallback.)
 - **Spotify:** software only — **librespot** (MIT, Rust) on the SoC; needs Spotify
   Premium. Music over cellular ~1 MB/min — prefer Wi-Fi.
 

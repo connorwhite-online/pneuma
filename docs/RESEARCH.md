@@ -409,6 +409,62 @@ Source: iFixit Humane AI Pin teardown / Chip ID
 
 ---
 
+## 8. SoC selection (deep pass)
+
+Five-angle sourced pass to pick the application SoC, given three hard requirements:
+(1) realtime audio over cellular to a cloud API, (2) **Bluetooth A2DP audio out** to
+earbuds, (3) MIPI camera + ISP. User lean: smallest/lowest-power, show open + gated.
+
+**Verdict: stay on RV1106 (G3, 256 MB) + add a Microchip BM83 for Bluetooth audio.**
+(See ADR-0009.)
+
+### How the requirements resolved
+- **#1 realtime audio — solved by a single A7.** Voice Opus encode/decode is a few %
+  of one ~1.2 GHz core; a plain **Opus-over-TLS-WebSocket** to the OpenAI Realtime API
+  is far lighter than full WebRTC; the camera JPEG/H.264 runs on the RV1106 **ISP+VPU,
+  not the CPU**. Step up to quad-A55 only for software video encode or full peer
+  WebRTC. `[high]` (Note: WS is TCP → can stall on lossy cellular; Pion WebRTC is the
+  loss-resilient option, still embeddable. `[high]`)
+- **#2 BT A2DP — the deciding factor.** A2DP is a **host-stack (BlueZ/PipeWire)**
+  concern, not SoC silicon — but it needs a BR/EDR-capable radio + a working BlueZ
+  driver. On the **RV1106 this is broken/absent**: Luckfox buildroot ships a stripped
+  BlueZ, the AIC8800DC combo is marketed BLE, and no one reports A2DP-to-earbuds on
+  it. `[med-high]` Fix = a **dedicated I²S A2DP-*source* chip**: **Microchip BM83**
+  (BM83SM1-00Tx "AT" firmware) does A2DP source + HFP + AAC on its own DSP, ~$12,
+  I²S + UART. `[high]` Avoid CSR8675 (deprecated source), BC127 (EOL), BM64 (sink),
+  Airoha (LE-earbud SoC). On mature Linux SoCs A2DP source works via BlueZ but AAC
+  needs a PipeWire rebuild (libfdk-aac non-free) → AirPods fall back to SBC. `[high]`
+- **#3 camera ISP** — RV1106 has it; among general SoCs only **RK3566** matches
+  (full ISP + HW H.264 + NPU). `[high]`
+
+### Candidate comparison
+| SoC | #1 | #2 BT A2DP | #3 camera | size/power | buildable | verdict |
+|-----|----|-----------|-----------|------------|-----------|---------|
+| **RV1106 G3** | ✅ A7 | ❌ alone → ✅ **+BM83** | ✅ ISP+VPU | tiniest | $8–60 | **PRIMARY (+BM83)** |
+| RK3566 | ✅✅ A55×4 | ✅ BlueZ | ✅ | ~1.2 W idle, bigger | broad SoMs | fallback (one-chip) |
+| Qualcomm QCM2290/QRB2210 | ✅✅ | ✅ | ✅✅ dual ISP | phone-class | kit ~$199; prod NDA/SoM | scale-up/funded; QCM2290 has **integrated LTE modem** |
+| RK3308 | ✅ | ext BT | ❌ no usable camera (ISP on paper, no driver/board) | tiny | ~$10 | ✗ camera |
+| i.MX 8M Mini | ✅✅ | ✅ | ❌ no ISP (ISP only on 8M Plus) | — | $53 SoM | ✗ ISP |
+| i.MX 7 | — | ✅ | ✗ no VPU | low | — | ✗ encode |
+| AM62x (base) | ✅ | ✅ | ✗ no ISP/encode (AM62A only) | — | — | ✗ |
+| STM32MP1 | weak A7×2 | ✅ | basic ISP, ✗ no HW encode | lowest | — | ✗ encode |
+| Allwinner T113-S3 | A7×2 | host | ✗ no MIPI, JPEG-only | lowest, 128 MB on-pkg | $14 | ✗ camera |
+| Allwinner V851S/V853 | ✅ A7 | ~maybe (XR829 Classic; **source unconfirmed**) | ✅ | tiny (V851S 64 MB tight) | $9+ | weaker BSP; not chosen |
+
+### Consequence
+RV1106 + BM83 + cellular + Wi-Fi/BLE combo + GNSS = **multiple radios** → 2.4 GHz
+antenna coordination is a real custom-PCB layout task.
+
+### Thin-evidence flags (verify on hardware)
+- Vendor/forum pages (Luckfox, aw-ol, CNX) 403'd direct fetch — BT/BlueZ/power
+  specifics are search-snippet-sourced. `[med]`
+- No published CPU benchmark for a TLS-WS Opus client on a single A7 — **run a spike**.
+- RV1106 A2DP-source unconfirmed either way → **1-day hardware spike** (pair + A2DP to
+  earbuds) before final commit, though BM83 largely moots it.
+- Qualcomm production MoQ/NDA terms `[low]`; RK3308 "no usable camera" `[med]`.
+
+---
+
 ## Method & caveats
 
 - Research conducted via parallel multi-source web search + fetch, May 2026.

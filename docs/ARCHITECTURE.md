@@ -365,4 +365,31 @@ for fully discreet two-way.
 
 **Consequences.** Constrains the SoC/module choice (or adds a chip); ~100–200 ms
 A2DP latency stacks on the cloud round-trip (use AAC for AirPods quality). Elevates
-the BT-earbud "optional fallback" of ADR-0003 to a first-class output.
+the BT-earbud "optional fallback" of ADR-0003 to a first-class output. **Resolved by
+ADR-0009: Path B (dedicated BM83 chip).**
+
+### ADR-0009 — SoC is RV1106 (G3) + a dedicated BM83 Bluetooth-audio chip
+
+**Status:** Accepted. (Deep SoC pass — see [`RESEARCH.md`](RESEARCH.md) §8.)
+
+**Decision.** Keep the **Rockchip RV1106 G3 (256 MB)** as the session SoC and add a
+**Microchip BM83** (A2DP-*source* "AT" firmware, I²S + UART, ~$12) to own Bluetooth
+audio. Do **not** step up to a larger SoC for Bluetooth's sake.
+
+**Rationale.** The RV1106 already clears the two hard requirements that matter for
+size: realtime audio (a single A7 + offloaded camera ISP/VPU is enough for Opus-over-
+WebSocket) and the MIPI camera. Its *only* real gap is A2DP — its BlueZ stack is
+broken/BLE-flavored — and a dedicated BM83 fixes that completely and cheaply, also
+giving HFP (earbud mic) and hardware AAC (better AirPods quality than the Linux
+libfdk-aac path). This honors the smallest/lowest-power priority while de-risking the
+weak spot.
+
+**Alternatives.** **RK3566** (quad-A55) is the documented one-chip fallback — mature
+BlueZ A2DP + ISP + headroom, but ~1.2 W idle and bigger. **Qualcomm QCM2290** is the
+"funded scale-up" ideal (dual ISP + **integrated LTE modem** + first-class Linux), but
+production is NDA/SoM-gated. Disqualified: RK3308 (no usable camera), i.MX 8M Mini/7,
+AM62x, STM32MP1, Allwinner T113 (missing ISP/encoder/MIPI).
+
+**Consequences.** Several radios on the board (cellular + Wi-Fi/BLE + BM83 BT-audio +
+GNSS) → 2.4 GHz antenna coordination is a real layout task. A 1-day hardware spike to
+confirm A2DP-to-earbuds is still prudent, though the BM83 largely moots the risk.
