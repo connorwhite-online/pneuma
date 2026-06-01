@@ -37,7 +37,7 @@ camera. Rationale: [`../docs/ARCHITECTURE.md`](../docs/ARCHITECTURE.md) (ADR-000
 | 12 | **Battery** | **PKCell LP803860** 2000 mAh (8×36×60 mm, JST-PH) | [Adafruit `2011`](https://www.adafruit.com/product/2011) | 12.50 | datasheet drawing | Standard catalog cell (see §ENCLOSURE for the slab geometry). |
 | 13 | **Waterproof USB-C** | **GCT USB4500-03-1-A** (IP67/68, mid-mount) | [Digi-Key](https://www.digikey.com/en/products/result?keywords=USB4500-03-1-A) · [GCT](https://gct.co) | 1–2 | [GCT STEP](https://gct.co) | Power **+ data**. Verified IP67 alt: GCT USB4715 ([Mouser](https://www.mouser.com/ProductDetail/GCT/USB4715-GF-A?qs=vvQtp7zwQdPhXuRDaiXpdQ%3D%3D), [STEP](https://gct.co/connector/usb4715)). |
 | 14 | **Cellular antenna** | proto: **Molex 2091420180** flex (85×14.5 mm, U.FL); product: **Pulse W3796** SMD (**40×7×3 mm**, 698–2700 MHz, >65% eff.) | [flex (Digi-Key)](https://www.digikey.com/en/products/detail/molex/2091420180/10057542) · [W3796 (Digi-Key)](https://www.digikey.com/en/products/result?keywords=W3796) · pigtail [Adafruit `852`](https://www.adafruit.com/product/852) | 3–7 | [Molex 3D](https://www.molex.com/en-us/products/part-detail/2091420180) | Flex = plug-and-play U.FL for the bench. **W3796 halves the footprint on the product PCB** (full band; needs a ground-plane keepout). Tinier chips (Ignion NN03-310, 30×3 mm) want a ~100 mm ground plane → low-band drops on our 80 mm body. |
-| 15 | **eSIM (MFF2)** | **Soracom** `SGEIL01-01-10` / **sysmocom** sysmoEUICC1 (5×6×0.75 mm) | [Soracom](https://store.soracom.io/) · [sysmocom](https://shop.sysmocom.de/) · removable: [Hologram](https://www.sparkfun.com/hologram-euicc-sim-card.html) | ~5–10/ea | ✔ std MFF2 footprint | Sold in packs. Start with a removable Hologram eUICC or a nano-SIM slot. |
+| 15 | **SIM / data** | **removable IoT SIM** — Soracom Plan01s *or* Hologram (single-unit, cuts to nano) | [Soracom](https://store.soracom.io/product/soracom-global-iot-industrial-sim/) · [Amazon 1-pack](https://us.amazon.com/dp/B01M30ZYR5) · [Hologram](https://store.hologram.io/) | ~5–6 + data | n/a | Pops into the LilyGO/Waveshare SIM slot — **this is what you order**. The **MFF2 solderable eSIM** (Soracom SGEIL01 / sysmocom, sold in packs) is a **production-PCB-only** item, not needed now. |
 | 16 | **Acoustic vents** | **Gore GAW331** (IP67/68) over mic + speaker | [Gore](https://www.gore.com/products/categories/venting) (sample) | sample | n/a | MOQ/sample-gated; generic ePTFE adhesive vent for prototypes. |
 | 17 | **Thermal** | aluminum unibody + graphite spreader + TIM pads (modem PA & SoC) + skin-side insulator | Digi-Key (TIM) / fab | 3–8 | — | Body *is* the heat exchanger (ADR-0006/0007). |
 | 18 | **Waterproof seal** | printed **silicone gasket** (seal + RF window + LED window) | fab / cast | 1 | — | Target IP68; two anodized aluminum shells. |
@@ -60,6 +60,26 @@ by the SoC board, modem, and battery.
   PCB ([its SnapEDA footprint](https://www.snapeda.com/search/?q=EG915U) gives the pads).
 - **Breadboard the rest:** Adafruit breakouts for the mic (`4346`), amp (`3006`),
   haptics (`2305`), charger (`4755`) — solder later.
+
+### Order checklist — what's actually single-unit buyable now (bench)
+**Buy:** cellular dev board (LilyGO T-A7670G R2 *or* Waveshare SIM7670G HAT — includes
+SIM slot + antenna) · removable IoT SIM (Soracom Plan01s / Hologram, single unit) ·
+brain (a Raspberry Pi you own, or base Luckfox Pico ~$8) · camera (SC3336, or a Pi
+cam) · Adafruit breakouts: amp `3006`, mic `4346`, haptics `2305` + Vybronics LRA,
+charger `4755`, LED `1938` · speaker (PUI AS01808MR-R or Adafruit `3923`) · battery
+(Adafruit `2011`) · nRF52840 board (Adafruit `4078` / XIAO) · (optional) Microchip
+**BM83 EVB** for the BT-audio spike.
+
+**Do NOT order yet (production-PCB / not single-unit):** bare Quectel EG915U (reflow
+LGA → use the dev board) · MFF2 eSIM chip (→ removable SIM) · Gore GAW331 vent (MOQ →
+generic ePTFE membrane for proto) · Pulse W3796 SMD antenna (the dev board has its
+own) · bare ICs (use the breakouts above).
+
+**Link caveats:** Digi-Key / SnapEDA links are *search-by-part-number* (always
+resolve + show live stock); manufacturer deep links (gct.co, vybronics) may drift —
+the **part number is the durable reference**. Confirm the **SC3336 FFC pin count
+(15P vs 20P)** for your board, and the **BM83 "AT"/source-firmware** variant before
+ordering.
 
 ### Sourcing gotchas + workarounds
 - **EG915U is reflow-only** (LGA-126). Prototype on the LilyGO A7670 board; reflow
