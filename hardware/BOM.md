@@ -93,6 +93,24 @@ resolve + show stock); vendor deep links may drift — the **part number is the 
 reference**. Confirm the **SC3336 FFC pin count (15P vs 20P)** and the **BM83
 "AT"/source firmware** before ordering.
 
+### Manufacturing cost reality (per-attempt vs volume)
+The "5 PCBs for $2" deals are **bare, 2-layer, simple** boards — not this one.
+- **Bare PCB fab:** 4–6 layers + controlled impedance (USB/MIPI/RF), qty ~5 → **~$30–100**.
+- **Components:** the BOM is **~$90–130 per board**, and parts have **MOQs**, so a first
+  buy overshoots → often **$200–400** even for a handful of boards.
+- **Assembly (PCBA):** RV1106/EG915U/BM83 are BGA/LGA — **can't be hand-soldered**, so
+  an assembly house charges stencil + setup + per-part fees → **~$100–200/run**.
+- **Net:** a single populated custom-board attempt is **low hundreds**; budget
+  **~$500–1,500 to a *working* board across the ~2–3 spins** the RF/power/thermal
+  tuning needs — **each respin repeats fab + assembly + setup**.
+- **"Cheap" is a volume property:** per-unit only approaches the ~$90–130 BOM + a few $
+  assembly at **hundreds–thousands** of units.
+- **Levers:** JLCPCB/PCBWay PCBA with their **in-stock parts library** (dodges MOQ +
+  bundles cheap assembly) · a modem **module** (not bare EG915U) on early spins ·
+  design to the fab's standard stackup (no exotic HDI).
+- **Why the dev-board step pays for itself:** a problem caught on a $30 board vs. a
+  board spin is a **~10–50× difference** in money + weeks of lead time.
+
 ### Sourcing gotchas + workarounds
 - **EG915U is reflow-only** (LGA-126). Prototype on the LilyGO A7670 board; reflow
   the EG915U at home with a stencil + hotplate for the final build.
