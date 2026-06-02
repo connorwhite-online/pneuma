@@ -23,7 +23,7 @@ camera. Rationale: [`../docs/ARCHITECTURE.md`](../docs/ARCHITECTURE.md) (ADR-000
 | # | Block | Orderable part | Buy at | ~$ | CAD/STEP | Notes |
 |---|-------|----------------|--------|----|----------|-------|
 | 1 | **Cellular modem** | **Quectel EG915U-EU** (Cat-1 bis, LGA-126, 23.6×19.9×2.4 mm) | [LCSC `C5248292`](https://jlcpcb.com/partdetail/Quectel-EG915UEU/C5248292) · [4gltemall](https://www.4gltemall.com/quectel-eg915u.html) | 8–12 | [SnapEDA](https://www.snapeda.com/search/?q=EG915U) | Design part; LGA = **reflow only** (see prototyping path). |
-| 2 | **Session SoC** | **Rockchip RV1106G3** (256 MB — the G3 RAM matters for the TLS/audio stack) | proto: [Luckfox Pico Ultra](https://www.luckfox.com/EN-Luckfox-Pico-Ultra) · [Waveshare](https://www.waveshare.com/luckfox-pico-ultra.htm) | 23–28 | [wiki `.step`](https://wiki.luckfox.com/Luckfox-Pico-RV1106/Downloads/) | Confirmed by SoC deep pass (RESEARCH §8 / ADR-0009). Pico Ultra is a 50×50 bench board (RJ45/USB-A dev-only); productize on a custom **bare-RV1106G3** PCB. **Fallback if you want one-chip BT: RK3566** (mature BlueZ, but ~1.2 W idle, bigger). |
+| 2 | **Session SoC** | **Rockchip RV1106G3** (256 MB — the G3 RAM matters for the TLS/audio stack) | bare: [LCSC](https://www.lcsc.com/search?q=RV1106) · dev: [Luckfox Pico Ultra](https://www.luckfox.com/EN-Luckfox-Pico-Ultra) | ~6–10 | [wiki `.step`](https://wiki.luckfox.com/Luckfox-Pico-RV1106/Downloads/) | Price = **bare chip** (the $25 Pico Ultra is a *dev* cost, not a board component). Confirmed by SoC deep pass (RESEARCH §8 / ADR-0009). Productize on a custom bare-RV1106G3 PCB. Fallback for one-chip BT: RK3566. |
 | 2b | **Bluetooth-audio chip** | **Microchip BM83** (BM83SM1-00Tx, AT/source firmware) | [DigiKey](https://www.digikey.com/en/products/result?keywords=BM83SM1-00TA) · [Microchip](https://www.microchip.com/en-us/product/bm83) | ~12 | [Microchip BM83](https://www.microchip.com/en-us/product/bm83) | Owns A2DP **source** + HFP (earbud mic) + AAC via I²S + UART — offloads BT audio off the RV1106's weak BlueZ (ADR-0009). Needs its own 2.4 GHz antenna. |
 | 3 | **Camera** | **SC3336 3MP Module (B)** (MIPI-CSI, F2.0) | [Waveshare](https://www.waveshare.com/sc3336-3mp-camera-b.htm) · luckfox.com | 9 | ✘ measure | Luckfox-native FFC; **confirm 15P vs 20P** against the Ultra connector. |
 | 4 | **Wake-island MCU** | **Raytac MDBT50Q-1MV2** (nRF52840, 10.5×15.5×2.05 mm) | [Adafruit `4078`](https://www.adafruit.com/product/4078) · [Digi-Key](https://www.digikey.com/en/products/result?keywords=MDBT50Q-1MV2) | 6 | [SnapEDA](https://www.snapeda.com/search/?q=MDBT50Q-1MV2) | nRF52840 does the always-on KWS itself (Syntiant dropped — see gotchas). BLE for setup. |
@@ -43,8 +43,25 @@ camera. Rationale: [`../docs/ARCHITECTURE.md`](../docs/ARCHITECTURE.md) (ADR-000
 | 18 | **Waterproof seal** | printed **silicone gasket** (seal + RF window + LED window) | fab / cast | 1 | — | Target IP68; two anodized aluminum shells. |
 | 19 | **Attachment** | magnet clamp (passive skin-side) / lanyard / clip | — | 1–3 | — | Skin-side piece stays passive + cool (Ai Pin lesson). |
 
-Indicative core electronics cost (qty 1, ex-PCB/enclosure): **~$90–130**, dominated
-by the SoC board, modem, and battery.
+### Component total (one board's worth of parts, qty 1)
+
+The parts **are** cheap individually — they just sum across ~25 line items:
+
+| Big-ticket items | ~$ |
+|---|---|
+| Battery (2000 mAh) | 12.5 |
+| BM83 Bluetooth-audio | 12 |
+| Cellular modem (EG915U) | 10 |
+| Camera (SC3336) | 8 |
+| SoC (bare RV1106G3) | 8 |
+| nRF52840 module | 6 |
+| LRA + speaker + thermal/graphite | ~12 |
+| Everything else (mic, amp, PMIC, LED, USB-C, antenna, SIM, gasket, magnet, passives, FFC/BTB connectors) | ~35 |
+| **Σ ≈** | **~$95–130 / board** |
+
+So **the bill of *materials* is ~$110 — that part is genuinely cheap.** What makes a
+*first custom board* expensive is **not the parts**; it's assembly setup + respins
+(next section). Per-unit drops toward this ~$110 at volume.
 
 ### Development path (cost-optimized — don't buy a pile of breakouts)
 
@@ -93,18 +110,19 @@ resolve + show stock); vendor deep links may drift — the **part number is the 
 reference**. Confirm the **SC3336 FFC pin count (15P vs 20P)** and the **BM83
 "AT"/source firmware** before ordering.
 
-### Manufacturing cost reality (per-attempt vs volume)
-The "5 PCBs for $2" deals are **bare, 2-layer, simple** boards — not this one.
+### Manufacturing cost reality (it's *iteration*, not parts)
+**The parts are cheap (~$110 above).** What makes a *first custom board* cost real
+money is the one-time assembly + respins — not the components:
 - **Bare PCB fab:** 4–6 layers + controlled impedance (USB/MIPI/RF), qty ~5 → **~$30–100**.
-- **Components:** the BOM is **~$90–130 per board**, and parts have **MOQs**, so a first
-  buy overshoots → often **$200–400** even for a handful of boards.
 - **Assembly (PCBA):** RV1106/EG915U/BM83 are BGA/LGA — **can't be hand-soldered**, so
-  an assembly house charges stencil + setup + per-part fees → **~$100–200/run**.
-- **Net:** a single populated custom-board attempt is **low hundreds**; budget
-  **~$500–1,500 to a *working* board across the ~2–3 spins** the RF/power/thermal
-  tuning needs — **each respin repeats fab + assembly + setup**.
-- **"Cheap" is a volume property:** per-unit only approaches the ~$90–130 BOM + a few $
-  assembly at **hundreds–thousands** of units.
+  an assembly house charges stencil + setup + per-part fees → **~$100–200/run** (one-time).
+- **One assembled prototype board ≈ ~$150–300** = the ~$110 of parts + a share of that
+  one-time setup for a small run.
+- **The scary ~$500–1,500 is the *program* cost if you respin 2–3×** (each respin
+  repeats fab + assembly + setup), which the RF/power/thermal tuning usually needs.
+  It's an **iteration** cost, not a parts cost.
+- **"Cheap" is a volume property:** per-unit approaches the ~$110 BOM + a few $ assembly
+  only at **hundreds–thousands** of units.
 - **Levers:** JLCPCB/PCBWay PCBA with their **in-stock parts library** (dodges MOQ +
   bundles cheap assembly) · a modem **module** (not bare EG915U) on early spins ·
   design to the fab's standard stackup (no exotic HDI).
