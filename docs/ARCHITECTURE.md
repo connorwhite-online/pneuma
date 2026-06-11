@@ -251,6 +251,14 @@ register a tool only when its hardware/config is present). Each capability impli
   else a dedicated A2DP-source chip. Routed via a second `AudioOut` HAL impl.
 - **Music over cellular is data-heavy** (~60 MB/h vs voice's ~20 MB/h) — fine on
   Wi-Fi, real money on a metered IoT SIM.
+- **Projection (optional / experimental)** — this form factor *can* do on-demand,
+  **glanceable 2D** projection (palm/surface) via a DLP Pico or laser-scanning engine
+  behind a sealed optical window. The on-demand duty cycle keeps heat/battery in
+  budget for brief (5–10 s) flashes — those walls only bite *sustained* bright use.
+  Real limits: **daylight readability** (optics, not heat) and **packaging volume** vs.
+  the battery. **Free-space 3D / holograms are not feasible** at any scale. Off the
+  screenless thesis — a deliberate scope/cost tradeoff, not a default (Ai Pin proved
+  it fits; its failure was UX, not feasibility).
 
 ---
 
