@@ -12,10 +12,11 @@ no audio, no photos — nothing but one small, curated **memory file**.
 > *Pneuma* (πνεῦμα) is Greek for **breath / spirit**. Each interaction is breath —
 > it happens, then it's gone. The single memory file is the spirit that endures.
 
-> Status: **early design / pre-implementation.** This repo currently holds the
-> architecture and research; no firmware is written yet. Start with
-> [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md), then
-> [`docs/RESEARCH.md`](docs/RESEARCH.md).
+> Status: **early design / pre-implementation.** Architecture and research live
+> in `docs/`; session firmware is a laptop-runnable scaffold, not device
+> bring-up. Start with [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md), then
+> [`docs/RESEARCH.md`](docs/RESEARCH.md). An independent feasibility review of
+> the standalone cellular spec is [`docs/FEASIBILITY.md`](docs/FEASIBILITY.md).
 
 ## What Pneuma is (and isn't)
 
@@ -59,6 +60,7 @@ pneuma/
 ├── README.md
 ├── docs/
 │   ├── ARCHITECTURE.md  ← system design, provider abstraction, ADRs
+│   ├── FEASIBILITY.md   ← is the standalone spec actually buildable as v1?
 │   ├── ENCLOSURE.md     ← aluminum body / thermal / waterproof / RF co-design
 │   ├── MEMORY.md        ← the memory-file spec (the "spirit")
 │   ├── PROVISIONING.md  ← one-time, app-less device setup
