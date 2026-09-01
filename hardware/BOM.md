@@ -130,6 +130,10 @@ money is the one-time assembly + respins — not the components:
   board spin is a **~10–50× difference** in money + weeks of lead time.
 
 ### Sourcing gotchas + workarounds
+- **EG915U-EU is not a US radio.** Bands are EMEA (B1/3/5/7/8/20/28). There is no
+  EG915U-NA; Portland / AT&T / T-Mobile need a NA SKU (e.g. EG915Q-NA / EG800Q-NA
+  class, or whatever the LilyGO/Waveshare HAT actually ships). Sharing B5 is not
+  coverage. Pick the regional modem before schematic.
 - **EG915U is reflow-only** (LGA-126). Prototype on the LilyGO A7670 board; reflow
   the EG915U at home with a stencil + hotplate for the final build.
 - **Syntiant NDP120 isn't buyable bare** (NDA/volume). Workaround: **drop it** —
@@ -150,10 +154,12 @@ money is the one-time assembly + respins — not the components:
   `get_location` / `directions` tools (ARCHITECTURE §8).
 - **Bluetooth audio out (AirPods / BT headphones) — table-stakes (ADR-0008/0009).**
   A2DP *source* for private/clear AI voice + music. **Decided: a dedicated
-  Microchip BM83** (row 2b) owns A2DP source + HFP + AAC via I²S, offloading the
-  RV1106's weak BlueZ — chosen over betting on the IPC BSP's Bluetooth. Adds a
-  **2.4 GHz BT antenna** + a pairing flow; output routes via a second `AudioOut` HAL
-  impl (speaker vs BT). (On an RK3566-class SoC you could instead use BlueZ A2DP
+  Microchip BM83** (row 2b) owns A2DP source + AAC via I²S, offloading the
+  RV1106's weak BlueZ. **HFP Audio Gateway (earbud mic) is not in the BM83 AT
+  Tx-mode firmware** — A2DP-out is real; two-way via AirPods mic is not, on this
+  chip. See [`../docs/FEASIBILITY.md`](../docs/FEASIBILITY.md). Adds a
+  **2.4 GHz BT antenna** + a pairing flow; the module itself is 32×15 mm with an
+  onboard PCB antenna. (On an RK3566-class SoC you could instead use BlueZ A2DP
   directly, ~$0 — the one-chip fallback.)
 - **Spotify:** software only — **librespot** (MIT, Rust) on the SoC; needs Spotify
   Premium. Music over cellular ~1 MB/min — prefer Wi-Fi.
@@ -229,7 +235,7 @@ KiCad PCB job, not hand wiring).
 
 | State | Approx power | Notes |
 |-------|--------------|-------|
-| Sleep (wake island only) | µA–few mA | SoC + modem fully off |
+| Sleep (wake island + modem registered-idle) | ~few–20 mA | SoC suspend or off; **modem stays attached** (~13 mA idle typical on EG915U). Full radio-off makes wake-to-talk too slow. |
 | Active session (streaming) | ~2–4 W | modem ~0.8 A + SoC; the heat driver |
 | Camera capture (brief) | + sensor power | gated off otherwise |
 
@@ -237,8 +243,12 @@ KiCad PCB job, not hand wiring).
   bursts + passive graphite/Cu spreading to an outward face + skin-side insulation.
 - LTE draws steadily during a session (no 2 G micro-spikes) → single LiPo + bulk
   cap + power-path PMIC; no supercap required.
-- Runtime: ~10 h+ continuous talk on a 2000 mAh cell; multi-day on the on-demand
-  burst model.
+- Runtime (order-of-magnitude): a 2000 mAh / 3.7 V cell is **7.4 Wh**. At the
+  ~3 W session budget that is **~2.5 h of continuous talk** (2000 mAh / ~0.8 A
+  LTE TX is the same answer). **All-day / multi-day only on an on-demand duty
+  cycle**, and only if idle current stays in the tens of mA — which argues
+  against fully powering off the modem every session. See
+  [`../docs/FEASIBILITY.md`](../docs/FEASIBILITY.md).
 
 ---
 
@@ -246,6 +256,10 @@ KiCad PCB job, not hand wiring).
 
 - [ ] Confirm session SoC (Luckfox Pico Ultra / RV1106) against the realtime
       WebRTC/TLS + camera workload and its idle/boot-time power.
+- [ ] Measure **wake-to-first-audio** with the modem already registered-idle vs.
+      fully powered off. Full power-off is expected to be 15–40 s (see
+      [`../docs/FEASIBILITY.md`](../docs/FEASIBILITY.md)) and is likely
+      product-infeasible; this number decides the power architecture.
 - [ ] Validate wake-island → SoC cold-boot/resume latency (affects "feel").
 - [ ] Bench modem TX current + needed bulk capacitance on the chosen cell.
 - [ ] Thermal mock-up: skin-side temp during a sustained session; size the
