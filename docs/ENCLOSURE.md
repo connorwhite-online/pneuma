@@ -1,5 +1,7 @@
 # Pneuma — Enclosure, Thermal & RF (mechanical design)
 
+> **Current prototype:** [Enclosure K mechanical interface](../hardware/mechanical/README.md) describes the perimeter-frame/soft-membrane design. The unibody and stacked-board assumptions below are historical and require reconciliation before PCB fabrication.
+
 The body is not just a shell — it is the **heat exchanger**, the **waterproof
 barrier**, and part of the **antenna system** all at once. These three jobs
 interact, so they're designed together here. Rationale tie-ins:

@@ -1,5 +1,7 @@
 # Pneuma — Bill of Materials & Interconnect
 
+> **Current mechanical integration:** see [Enclosure K interface](mechanical/README.md). The current prototype uses perimeter frames and soft faces; older unibody thermal and board-stack assumptions are not validated for that construction. Final mounting holes and custom PCBs remain pending.
+
 Hardware for the **standalone cellular** Pneuma device: an always-on **wake-island
 MCU** that powers an on-demand **Linux session SoC** + **LTE Cat-1 bis modem** +
 camera. Rationale: [`../docs/ARCHITECTURE.md`](../docs/ARCHITECTURE.md) (ADR-0001,
