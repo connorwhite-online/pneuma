@@ -8,7 +8,6 @@
   (lib (name "Logic_LevelTranslator")(type "KiCad")(uri "${KICAD10_SYMBOL_DIR}/Logic_LevelTranslator.kicad_sym")(options "")(descr ""))
   (lib (name "Pneuma")(type "KiCad")(uri "${KIPRJMOD}/../lib/Pneuma.kicad_sym")(options "")(descr ""))
   (lib (name "Power_Protection")(type "KiCad")(uri "${KICAD10_SYMBOL_DIR}/Power_Protection.kicad_sym")(options "")(descr ""))
-  (lib (name "Sensor_Touch")(type "KiCad")(uri "${KICAD10_SYMBOL_DIR}/Sensor_Touch.kicad_sym")(options "")(descr ""))
   (lib (name "Transistor_FET")(type "KiCad")(uri "${KICAD10_SYMBOL_DIR}/Transistor_FET.kicad_sym")(options "")(descr ""))
   (lib (name "power")(type "KiCad")(uri "${KICAD10_SYMBOL_DIR}/power.kicad_sym")(options "")(descr ""))
 )

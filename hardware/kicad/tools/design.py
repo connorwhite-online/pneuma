@@ -27,7 +27,7 @@ FFC_PINOUT = {
     11: "MDM_RXD_3V3", 12: "MDM_TXD_3V3", 13: "MDM_RTS_3V3", 14: "MDM_CTS_3V3", 15: "GND",
     16: "+3V3_AON", 17: "I2C_SCL", 18: "I2C_SDA",
     19: "MDM_PWRKEY", 20: "MDM_RESET", 21: "MDM_STATUS", 22: "MDM_RI", 23: "MDM_DTR",
-    24: "USB_SEL", 25: "CHG_N", 26: "VBUS_DET_3V3", 27: "TOUCH_OUT", 28: "+3V3_SOC",
+    24: "USB_SEL", 25: "CHG_N", 26: "VBUS_DET_3V3", 27: "GND", 28: "+3V3_SOC",
     29: "GND", 30: "GND",
 }
 
@@ -144,7 +144,7 @@ def main_board():
         3: "SOC_EN", 4: "SOC_NPOR", 5: "SOC_WAKE", 6: "SOC_IRQ",   # P1.10..P1.13
         8: "HAPTIC_EN", 41: "HAPTIC_TRIG",             # P1.15 / P0.17
         10: "LED_R", 11: "LED_G", 12: "LED_B",         # P0.29 / P0.02 / P0.31
-        13: "TOUCH_OUT", 14: "CHG_N", 20: "VBUS_DET_3V3", 23: "USB_SEL",   # P0.28 P0.30 P0.04 P0.07
+        13: "TOUCH_OUT", 14: "CHG_N", 20: "VBUS_DET_3V3", 23: "USB_SEL",   # P0.28 (touch is now local) P0.30 P0.04 P0.07
         25: "MDM_PWRKEY", 26: "MDM_RESET",             # P1.08 / P1.09
         37: "MDM_STATUS", 36: "MDM_RI", 39: "MDM_DTR", # P0.13 / P0.14 / P0.15
         47: "NRF_SWO",                                 # P1.00 (trace)
@@ -220,6 +220,15 @@ def main_board():
     b.C("C23", "10u", "+3V3_SOC", fp=C0603)
     b.R("R12", "4.7k", "CAM_SCL", "+1V8_SOC")
     b.R("R13", "4.7k", "CAM_SDA", "+1V8_SOC")
+    # capacitive touch: electrode sits on the front membrane ~10 mm below the camera bump
+    b.add("U6", "Sensor_Touch:AT42QT1011-M", "AT42QT1011-MAH", "Package_DFN_QFN:DFN-8-1EP_2x2mm_P0.5mm_EP0.9x1.5mm",
+          {1: "TOUCH_SNSK", 2: None, 3: None, 4: "GND", 5: "TOUCH_OUT", 6: "GND", 7: "+3V3_AON", 8: "TOUCH_SNS", 9: "GND"},
+          MPN="AT42QT1011-MAH", Manufacturer="Microchip", Description="1-key capacitive touch, UDFN-8 2x2")
+    b.C("C24", "100n", "+3V3_AON")
+    b.C("C25", "22n", "TOUCH_SNS", "TOUCH_SNSK", Note="Cs; tune with the final electrode area")
+    b.R("R15", "4.7k", "TOUCH_SNSK", "TOUCH_E", Note="Rs; series to the electrode")
+    b.add("TP11", "Connector:TestPoint", "TOUCH_E", "Pneuma:SpringPad_3.0x2.0mm", {1: "TOUCH_E"},
+          Description="Touch electrode spring contact, front face ~10 mm below the bump")
     ffc = dict(FFC_PINOUT)
     ffc["MP"] = "GND"
     b.add("J5", "Connector_Generic_MountingPin:Conn_01x30_MountingPin", "TO_PWR", FFC30, ffc,
@@ -367,14 +376,6 @@ def pwr_board():
 
     # ---- Touch + interconnect ---------------------------------------------------
     b.sheet("Interconnect")
-    b.add("U9", "Sensor_Touch:AT42QT1011-M", "AT42QT1011-MAH", "Package_DFN_QFN:DFN-8-1EP_2x2mm_P0.5mm_EP0.9x1.5mm",
-          {1: "TOUCH_SNSK", 2: None, 3: None, 4: "GND", 5: "TOUCH_OUT", 6: "GND", 7: "+3V3_AON", 8: "TOUCH_SNS", 9: "GND"},
-          MPN="AT42QT1011-MAH", Manufacturer="Microchip", Description="1-key capacitive touch, UDFN-8 2x2")
-    b.C("C22", "100n", "+3V3_AON")
-    b.C("C23", "22n", "TOUCH_SNS", "TOUCH_SNSK", Note="Cs; tune for electrode size")
-    b.R("R20", "4.7k", "TOUCH_SNSK", "TOUCH_E")
-    b.add("TP13", "Connector:TestPoint", "TOUCH_E", "Pneuma:SpringPad_3.0x2.0mm", {1: "TOUCH_E"},
-          Description="Touch electrode spring-contact pad")
     ffc = dict(FFC_PINOUT)
     ffc["MP"] = "GND"
     b.add("J5", "Connector_Generic_MountingPin:Conn_01x30_MountingPin", "TO_MAIN", FFC30, ffc,

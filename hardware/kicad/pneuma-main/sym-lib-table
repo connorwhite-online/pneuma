@@ -10,5 +10,6 @@
   (lib (name "Power_Management")(type "KiCad")(uri "${KICAD10_SYMBOL_DIR}/Power_Management.kicad_sym")(options "")(descr ""))
   (lib (name "RF_Module")(type "KiCad")(uri "${KICAD10_SYMBOL_DIR}/RF_Module.kicad_sym")(options "")(descr ""))
   (lib (name "Sensor_Audio")(type "KiCad")(uri "${KICAD10_SYMBOL_DIR}/Sensor_Audio.kicad_sym")(options "")(descr ""))
+  (lib (name "Sensor_Touch")(type "KiCad")(uri "${KICAD10_SYMBOL_DIR}/Sensor_Touch.kicad_sym")(options "")(descr ""))
   (lib (name "power")(type "KiCad")(uri "${KICAD10_SYMBOL_DIR}/power.kicad_sym")(options "")(descr ""))
 )

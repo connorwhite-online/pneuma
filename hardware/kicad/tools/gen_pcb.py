@@ -50,6 +50,7 @@ PLACE = {
         "D1": (0.7, 44.3, "F", 0),          # status LED at the top end, behind a light window
         "J2": (6.9, 41.4, "F", 0),          # speaker pads
         "J3": (-5.6, 41.4, "F", 0),         # LRA pads
+        "TP11": (11.0, 4.6, "F", 0),        # touch electrode spring contact (front face)
     },
     "pneuma-pwr": {
         "J1": (0.0, -55.4, "F", 0),         # USB-C in the channel tongue, mouth toward -y
@@ -63,14 +64,15 @@ PLACE = {
 AUTO_SIDE = {"pneuma-main": "B", "pneuma-pwr": "B"}
 AUTO_SIDE_REF = {
     "pneuma-main": {**{f"TP{i}": "F" for i in range(1, 11)}, "C1": "F", "C2": "F", "C7": "F", "C8": "F",
+                    "R15": "B", "C25": "B", "C24": "B",
                     "C3": "F", "C4": "F", "C23": "F", "R6": "F", "R7": "F", "R8": "F"},
     "pneuma-pwr": {"D1": "F", "C7": "F", "C8": "F", "U8": "F", "C9": "F", "C10": "F",
                    "C11": "F", "R14": "F", "C13": "F", "C14": "F", "R15": "F", "R16": "F", "R17": "F", "R18": "F",
                    "R19": "F", "C18": "F", "C19": "F", "C20": "F", "C21": "F", "R20": "F", "C23": "F",
-                   "J3": "B", "TP13": "F"},
+                   "J3": "B"},
 }
 # optional explicit anchors (default: the non-passive part sharing the most signal nets)
-ANCHOR = {"pneuma-main": {**{f"TP{i}": "U1" for i in range(1, 11)}},
+ANCHOR = {"pneuma-main": {**{f"TP{i}": "U1" for i in range(1, 11)}, "U6": "TP11", "R15": "TP11", "C25": "TP11"},
           "pneuma-pwr": {}}
 TP_COLUMN = {"pneuma-main": [(-13.6 + 2.4 * i, 4.4) for i in range(10)]}   # row under the Core, top side
 

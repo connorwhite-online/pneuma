@@ -181,7 +181,7 @@ Everything is in [`mechanical/enclosure-L-electronics.json`](mechanical/enclosur
    - M1.6 holes: main (−11.8, 41.5) and (12.8, 41.35); power (15.6, −21.6) and (−19.8, −22.6).
    - Use a rigid frame-referenced carrier, not screws into TPU (same guidance as K).
 3. **Headroom over the Core:** extend the camera-bump pocket down to y ≈ 2.5 so everything stacked on the Core fits:
-   - speaker Ø15×3.5 at (−8, 10.2), top z 12.1
+   - speaker Ø15×3.5 at **(−8, 12.4)**, top z 12.1 — nudged +2.2 mm so it clears the touch pad
    - LRA Ø10×4 at **(−10.5, 30.5)**, top z 12.6 (moved off the Core1106 Wi-Fi/BT chip antenna at x 10.5–13.7, y 10.5–13.5)
    - SoC thermal post
    - camera envelope: 11×11×6 mm on the 30° axis at K's aperture (0, 26, 16.8)
@@ -191,7 +191,7 @@ Everything is in [`mechanical/enclosure-L-electronics.json`](mechanical/enclosur
    - mic ports above MK1 (−15.9, 17.3) and MK2 (−15.9, 22.1), with gaskets
    - speaker vents over (−8, 10.2)
    - LED light pipe at (0.7, 44.3)
-   - the touch electrode on the inner face over the battery, with a spring contact to PNM-PWR TP13
+   - **touch pad: 24 × 16 mm electrode on the front membrane's inner face, x −12…12, y −12…4** — i.e. ~10 mm below the camera bump's lower edge. Spring contact to **PNM-MAIN TP11** at (11.0, 4.6); the AT42QT1011 front-end (U6) is on the main board beside the nRF, so the electrode run is short and TOUCH_OUT no longer crosses the FFC
 7. **RF:**
    - No copper or metal in the keep-out at x 9–23.5, y 2–16. That covers the nRF chip antenna and the Core1106 Wi-Fi/BT antenna.
    - **LTE antenna pockets** in the soft USB-end wall on either side of the USB channel: x −21…−7.5 and 7.5…18, y −50.5…−47, z 3–10. This only works because there's no metal frame. The FPC antenna part is still to be picked.
@@ -227,6 +227,7 @@ Everything is in [`mechanical/enclosure-L-electronics.json`](mechanical/enclosur
   - **Option C — drop the 30° tilt:** shortens the bump, changes the framing K was designed around.
   - **Connector caveat:** J4 is 20P on the Luckfox pinout, which is what the bench (B) uses. Many compact modules are **24P**. Regenerating J4 for a 24P module is a small change to `design.py`, but the module's drawing and pinout have to come first.
 - **Thermal numbers:** skin temperature over a 60 s and a 10 min session, with and without the copper spreader (Phase 0 mock-up: copper tape inside a printed TPU shell).
-- **Speaker acoustics** (front volume, vents) and **touch sensitivity** through the battery stack (C23/R20 tuning).
+- **Speaker acoustics** (front volume, vents) — note the vents now sit just above the touch pad.
+- **Touch sensitivity:** the battery pouch is ~1–2 mm behind the pad's lower half and the speaker sits just above it; both reduce sensitivity. Tune C25 (Cs) against the final electrode, and consider a foam spacer to hold the electrode off the metal.
 - **RF pi-match** R14/C13/C14 values, tuned on the real antenna.
 - **Passive specs** in the CSVs are value + footprint only. Use X5R/X7R ≥6.3 V (≥10 V on VBUS/VSYS bulk) and 1% resistors. Pick LCSC part numbers at order time.

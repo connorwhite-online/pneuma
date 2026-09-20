@@ -48,6 +48,9 @@ for a in (ax,):
         (x0, y0, _), (x1, y1, _) = z["box_min"], z["box_max"]
         a.add_patch(Rectangle((x0, y0), x1 - x0, y1 - y0, fc="#e74c3c", alpha=0.25, ec="#c0392b"))
     a.text(-21, -53, "LTE antenna pockets", fontsize=6.5, color="#c0392b")
+    te = ob["touch_electrode"]["zone_xy"]
+    a.add_patch(Rectangle((te[0], te[1]), te[2]-te[0], te[3]-te[1], fc="#16a085", alpha=0.30, ec="#0e6655", lw=1.2))
+    a.text((te[0]+te[2])/2, (te[1]+te[3])/2, "touch pad\n24 x 16", ha="center", va="center", fontsize=7.5, color="#0b5345")
     a.add_patch(Rectangle((-5.5, 18.0), 11, 12.5, fill=False, ec="k", lw=1.0, ls="-."))
     a.text(0, 29, "camera", ha="center", fontsize=7)
     a.axhline(-10, color="0.6", lw=0.6, ls=":"); a.axhline(-20, color="0.6", lw=0.6, ls=":")

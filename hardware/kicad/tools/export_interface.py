@@ -24,8 +24,11 @@ OFFBOARD = {
     "ffc": {"what": "30-way 0.5 mm FFC, straight-through, ~16.5 mm wide, 0.12 mm thick; runs UNDER the battery",
             "box_min": [-17.3, -21.4, 2.5], "box_max": [0.9, 2.3, 2.8],
             "note": "S-bend at PNM-PWR J5 (top side) needs y -21.4..-19.3, z 2.5..6.8"},
-    "speaker": {"what": "PUI AS01508MR-LWC40 class, 15 mm round, 8 ohm, wire leads -> PNM-MAIN J2 pads",
-                "cyl_center": [-8.0, 10.2, 8.6], "diameter": 15.0, "height": 3.5,
+    "speaker": {"what": "PUI AS01508MR-LWC40 class, 15 mm round, 8 ohm, 1 W, wire leads -> PNM-MAIN J2 pads",
+                "cyl_center": [-8.0, 12.4, 8.6], "diameter": 15.0, "height": 3.5,
+                "why_here": "nudged +2.2 mm in y so it clears the touch pad (which ends at y 4). Keeping this 1 W "
+                            "15 mm round rather than a 15x11 0.3 W part: ~5 dB louder, and beside the camera there "
+                            "is only ~10 mm of width, where the only parts are 5 mW earpiece receivers",
                 "note": "fires toward the front skin; needs a sealed front volume + vent holes in the front membrane"},
     "lra": {"what": "Vybronics VG1040003D, 10 mm x 4 mm, leads -> PNM-MAIN J3 pads",
             "cyl_center": [-10.5, 30.5, 8.6], "diameter": 10.0, "height": 4.0,
@@ -65,8 +68,13 @@ OFFBOARD = {
                "aperture_center": [0, 26, 16.8], "optical_axis": [0, 0.5, 0.8660254], "depth_along_axis": 6.0,
                "body_xy": [11.0, 11.0],
                "fpc": "FPC wraps over the PNM-MAIN top edge (y~44) into J4 on the bottom side; bench uses SC3336 (B)"},
-    "touch_electrode": {"what": "copper-foil or FPC electrode on the membrane inner face over the battery (touch area)",
-                        "note": "contacts PNM-PWR TP13 spring pad; keep >=1 mm from FFC/battery metal where possible"},
+    "touch_electrode": {"what": "copper-foil or FPC electrode on the front membrane inner face, ~10 mm below the "
+                                "camera bump (bump lower edge is near y 8)",
+                        "zone_xy": [-12.0, -12.0, 12.0, 4.0], "size_mm": [24, 16],
+                        "contact": "PNM-MAIN TP11 spring pad at (11.0, 4.6), front side; front-end U6 is on PNM-MAIN "
+                                   "so the electrode trace is short and TOUCH_OUT no longer crosses the FFC",
+                        "note": "the battery pouch sits ~1-2 mm behind the lower part of this pad and the speaker is "
+                                "just above it; both reduce sensitivity. Tune C25 (Cs) against the final electrode"},
     "lte_antenna": {"what": "FPC LTE antenna (698-2700 MHz) with MHF1 pigtail to PNM-PWR J3, part TBD",
                     "zones": [{"box_min": [-21.0, -50.5, 3.0], "box_max": [-7.5, -47.0, 10.0]},
                               {"box_min": [7.5, -50.5, 3.0], "box_max": [18.0, -47.0, 10.0]}],
@@ -109,7 +117,7 @@ THERMAL = {
     ],
     "spreader_keepouts": [
         {"name": "nRF chip antenna + Core1106 WiFi/BT antenna", "box_xy": [9.0, 2.0, 23.5, 16.0]},
-        {"name": "touch electrode (over battery)", "box_xy": [-21.5, -21.0, 21.0, 2.5]},
+        {"name": "touch electrode (front face, below the bump)", "box_xy": [-13.5, -13.5, 13.5, 5.5]},
         {"name": "LTE antenna band", "box_xy": [-22.0, -59.0, 19.0, -46.0]},
         {"name": "camera aperture + optical cone", "circle_xy": [0.0, 26.0], "diameter": 12.0},
         {"name": "mic ports", "circles_xy": [[-15.9, 17.28], [-15.9, 22.08]], "diameter": 3.0},
