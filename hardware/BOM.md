@@ -1,6 +1,15 @@
 # Pneuma — Bill of Materials & Interconnect
 
-> **Current mechanical integration:** see [Enclosure K interface](mechanical/README.md). The current prototype uses perimeter frames and soft faces; older unibody thermal and board-stack assumptions are not validated for that construction. Final mounting holes and custom PCBs remain pending.
+> **Rev A is frozen, 2026-09-19: see [`REV-A.md`](REV-A.md).** It supersedes the rows below wherever they
+> disagree. Modem → **EG800Q-NA**. SoC → **Luckfox Core1106-1408** module. **BM83 removed.** Camera → compact
+> FPC module on the Luckfox 20P pinout. Battery → **~550–600 mAh (≤7×20×40 mm)**. Speaker → **15 mm AS01508MR-LWC40**.
+> USB-C → **USB4105-GF-A**. Per-board BOMs with MPNs are generated into
+> [`kicad/out/`](kicad/out) from [`kicad/tools/design.py`](kicad/tools/design.py). The enclosure grows +10 mm (enclosure L) and becomes a
+> **two-piece silicone/TPU shell with no aluminum**. Rows 17–18 (unibody thermal, anodized shells) are superseded by a
+> copper-foil spreader with copper-shim posts (REV-A.md §6.8).
+> Everything below is kept as the research record.
+>
+> **Previous mechanical integration:** see [Enclosure K interface](mechanical/README.md). The current prototype uses perimeter frames and soft faces; older unibody thermal and board-stack assumptions are not validated for that construction.
 
 Hardware for the **standalone cellular** Pneuma device: an always-on **wake-island
 MCU** that powers an on-demand **Linux session SoC** + **LTE Cat-1 bis modem** +

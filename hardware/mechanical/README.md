@@ -52,3 +52,14 @@ For PLA enclosure fit, start with the latch coupon. The new geometry is a test i
 - [Infineon IM69D130 datasheet](https://www.infineon.com/assets/row/public/documents/24/49/infineon-im69d130-datasheet-en.pdf): package and acoustic-port guidance; use the manufacturer land pattern in the PCB design.
 - [Microchip BM83 features](https://onlinedocs.microchip.com/oxy/GUID-414904F5-364E-4377-B959-9226AD29D6A9-en-US-8/GUID-90AB7782-7237-42CB-802D-B4DB2B9C5608.html): AT mode lists A2DP source or A2DP/HFP sink. That does not establish the HFP Audio Gateway role needed for an earbud microphone.
 - [KiCad CLI documentation](https://docs.kicad.org/9.0/en/cli/cli.html): PCB STEP/GLB export for enclosure integration. Use documentation matching the installed version. KiCad was not installed on the workstation at this update; no ERC/DRC or native KiCad file validation has been run.
+
+## Enclosure L (next): electronics interface for Rev A
+
+Rev A boards are placed, and the enclosure grows **+10 mm** (a straight insert at y = −10; the camera end is unchanged).
+[`enclosure-L-electronics.json`](enclosure-L-electronics.json) carries everything in these axes:
+- board outlines, z-levels and M1.6 hole positions
+- every part courtyard and side
+- mic ports, LED, the USB-C mouth (z 6.46) and service access
+- off-board envelopes: battery, FFC, speaker, LRA, camera
+
+Requirements are listed in [`../REV-A.md`](../REV-A.md) §6. Populated STEPs come from `hardware/kicad/tools/build.sh`.
