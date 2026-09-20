@@ -14,6 +14,7 @@ validation. The PCBs are *placed, not routed*. Nothing here has been built or po
 | Layout plan + side view | [`kicad/out/layout-L.png`](kicad/out/layout-L.png) |
 | Copper spreader cut outline | [`kicad/out/spreader-front-L.dxf`](kicad/out/spreader-front-L.dxf) |
 | Regenerate everything | `hardware/kicad/tools/build.sh` |
+| Camera module RFQ (blocking enclosure L) | [`CAMERA-RFQ.md`](CAMERA-RFQ.md) |
 
 Checks run on the generated files with KiCad 10.0.6 `kicad-cli`:
 - **ERC:** 0 errors on both boards.
@@ -222,7 +223,7 @@ Everything is in [`mechanical/enclosure-L-electronics.json`](mechanical/enclosur
 
     Anything past 12 × 12 also needs the LRA moved off the camera footprint.
   - **Option A — ship the SC3336 (B) ($9, verified):** needs a Ø14 × 22 mm angled barrel housing. No sourcing, but it's a periscope, not a wearable bump.
-  - **Option B — board-lens FPC module (recommended):** any sensor from the tuned list above, ≤12 × 12 × 6 mm, 90–110° FOV. Module houses (Sincere, Hampo, CK Vision, Sinoseen) quote at MOQ 3–10. Send them the envelope, the FOV and the pinout; ask for the shortest board lens they stock.
+  - **Option B — board-lens FPC module (recommended):** RFQ ready to send in [`CAMERA-RFQ.md`](CAMERA-RFQ.md). any sensor from the tuned list above, ≤12 × 12 × 6 mm, 90–110° FOV. Module houses (Sincere, Hampo, CK Vision, Sinoseen) quote at MOQ 3–10. Send them the envelope, the FOV and the pinout; ask for the shortest board lens they stock.
   - **Option C — drop the 30° tilt:** shortens the bump, changes the framing K was designed around.
   - **Connector caveat:** J4 is 20P on the Luckfox pinout, which is what the bench (B) uses. Many compact modules are **24P**. Regenerating J4 for a 24P module is a small change to `design.py`, but the module's drawing and pinout have to come first.
 - **Thermal numbers:** skin temperature over a 60 s and a 10 min session, with and without the copper spreader (Phase 0 mock-up: copper tape inside a printed TPU shell).
