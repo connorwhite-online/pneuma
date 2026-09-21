@@ -1,0 +1,76 @@
+(footprint "SpringPad_3.0x2.0mm"
+  (version 20241229)
+  (generator "pneuma_lib_gen")
+  (generator_version "1.0")
+  (layer "F.Cu")
+  (descr "ENIG pad for a spring finger / pogo contact (touch electrode)")
+  (attr smd)
+  (property "Reference" "REF**"
+    (at 0 -2 0)
+    (layer "F.SilkS")
+    (uuid "c1d66f43-c7f5-5483-9b93-1bb59f6ac14b")
+    (effects
+      (font
+        (size 1 1)
+        (thickness 0.15)
+      )
+    )
+  )
+  (property "Value" "SpringPad_3.0x2.0mm"
+    (at 0 2 0)
+    (layer "F.Fab")
+    (uuid "364b9574-d861-5760-906e-03baa45a3696")
+    (effects
+      (font
+        (size 1 1)
+        (thickness 0.15)
+      )
+    )
+  )
+  (pad "1" smd rect
+    (at 0 0)
+    (size 3 2)
+    (layers "F.Cu" "F.Mask")
+    (uuid "fa899611-4dde-5e79-9d7d-1664a1d81d80")
+  )
+  (fp_line
+    (start -1.75 -1.25)
+    (end 1.75 -1.25)
+    (stroke
+      (width 0.05)
+      (type solid)
+    )
+    (layer "F.CrtYd")
+    (uuid "393308af-1a17-566c-ba88-e74ab9e0e79b")
+  )
+  (fp_line
+    (start 1.75 -1.25)
+    (end 1.75 1.25)
+    (stroke
+      (width 0.05)
+      (type solid)
+    )
+    (layer "F.CrtYd")
+    (uuid "bff2c21e-78bf-5d8d-8ac2-c21d5dc09714")
+  )
+  (fp_line
+    (start 1.75 1.25)
+    (end -1.75 1.25)
+    (stroke
+      (width 0.05)
+      (type solid)
+    )
+    (layer "F.CrtYd")
+    (uuid "ba0cd679-5dfc-53fc-8e0f-2af2bf382acd")
+  )
+  (fp_line
+    (start -1.75 1.25)
+    (end -1.75 -1.25)
+    (stroke
+      (width 0.05)
+      (type solid)
+    )
+    (layer "F.CrtYd")
+    (uuid "8dd0b07e-26c3-5a6d-bdde-13e4f41b33b6")
+  )
+)

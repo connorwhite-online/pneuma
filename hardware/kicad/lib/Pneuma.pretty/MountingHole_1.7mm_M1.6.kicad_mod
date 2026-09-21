@@ -1,0 +1,90 @@
+(footprint "MountingHole_1.7mm_M1.6"
+  (version 20241229)
+  (generator "pneuma_lib_gen")
+  (generator_version "1.0")
+  (layer "F.Cu")
+  (descr "NPTH 1.7 mm for M1.6 self-tapper / heat-set insert in the rigid carrier; 3.2 mm head clearance"
+  )
+  (attr exclude_from_pos_files exclude_from_bom)
+  (property "Reference" "REF**"
+    (at 0 -2.4 0)
+    (layer "F.SilkS")
+    (hide yes)
+    (uuid "7751c398-a5f6-5a77-9e19-e2402a839fb8")
+    (effects
+      (font
+        (size 1 1)
+        (thickness 0.15)
+      )
+    )
+  )
+  (property "Value" "MountingHole_1.7mm_M1.6"
+    (at 0 2.4 0)
+    (layer "F.Fab")
+    (uuid "0c6a0f4f-1bac-57cc-bfc5-73ab731c065c")
+    (effects
+      (font
+        (size 1 1)
+        (thickness 0.15)
+      )
+    )
+  )
+  (pad "" np_thru_hole circle
+    (at 0 0)
+    (size 1.7 1.7)
+    (drill 1.7)
+    (layers "*.Cu" "*.Mask")
+    (uuid "9048a967-233a-5c9a-8ad2-5cfa1c996112")
+  )
+  (fp_circle
+    (center 0 0)
+    (end 1.6 0)
+    (stroke
+      (width 0.12)
+      (type solid)
+    )
+    (fill no)
+    (layer "Cmts.User")
+    (uuid "40266d91-e800-5380-b442-f72b4c36314c")
+  )
+  (fp_line
+    (start -1.7 -1.7)
+    (end 1.7 -1.7)
+    (stroke
+      (width 0.05)
+      (type solid)
+    )
+    (layer "F.CrtYd")
+    (uuid "9b159e6a-e6d5-5642-8513-364cdb6a484e")
+  )
+  (fp_line
+    (start 1.7 -1.7)
+    (end 1.7 1.7)
+    (stroke
+      (width 0.05)
+      (type solid)
+    )
+    (layer "F.CrtYd")
+    (uuid "3a514199-a209-5780-8ad5-adea1dde45d5")
+  )
+  (fp_line
+    (start 1.7 1.7)
+    (end -1.7 1.7)
+    (stroke
+      (width 0.05)
+      (type solid)
+    )
+    (layer "F.CrtYd")
+    (uuid "4be404e6-db8d-57fd-a925-5a3f5c45cc4b")
+  )
+  (fp_line
+    (start -1.7 1.7)
+    (end -1.7 -1.7)
+    (stroke
+      (width 0.05)
+      (type solid)
+    )
+    (layer "F.CrtYd")
+    (uuid "9305919f-b8f0-5841-8e7a-e6767aa9b6c7")
+  )
+)

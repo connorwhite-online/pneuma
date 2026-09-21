@@ -9,7 +9,9 @@ This document is the synthesis of the research in [`RESEARCH.md`](RESEARCH.md).
 Genuine forks are captured as **Architecture Decision Records (ADRs)** at the end.
 
 Status: **design, pre-implementation.** This is the blueprint, built for the
-*right* core rather than a throwaway prototype.
+*right* core rather than a throwaway prototype. An independent review of whether
+this spec is a feasible *v1* (vs. a desk demo vs. a consumer product) is
+[`FEASIBILITY.md`](FEASIBILITY.md).
 
 > **Name & principle.** *Pneuma* (πνεῦμα) = breath / spirit. Each interaction is
 > breath — it happens and is gone. The one persistent memory file is the spirit
