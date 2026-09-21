@@ -15,7 +15,7 @@ ROOT = os.path.dirname(HERE)
 IF = json.load(open(os.path.join(os.path.dirname(ROOT), "mechanical", "enclosure-L-electronics.json")))
 
 # on-board parts without a stock KiCad 3D model: (board, ref, height above the PCB face)
-NO_MODEL = [("pneuma-pwr", "J4", 1.6), ("pneuma-pwr", "U2", 1.0), ("pneuma-pwr", "U9", 0.6),
+NO_MODEL = [("pneuma-pwr", "J4", 1.6), ("pneuma-pwr", "U2", 1.0), ("pneuma-main", "U6", 0.6),
             ("pneuma-main", "D1", 0.3), ("pneuma-main", "MK1", 1.1), ("pneuma-main", "MK2", 1.3),
             ("pneuma-main", "U4", 0.8), ("pneuma-main", "Y1", 0.6)]
 
@@ -59,8 +59,8 @@ def main():
     body = cq.Workplane("XY").box(cam["body_xy"][0], cam["body_xy"][1], d).translate((0, 0, -d / 2 - 0.4))
     body = body.rotate((0, 0, 0), (1, 0, 0), -tilt).translate(tuple(cam["aperture_center"]))
     items["camera_module"] = body
-    for i, post in enumerate(IF["thermal"]["thermal_posts"]):
-        items[f"thermal_post_{i + 1}"] = box(*post["box_min"], *post["box_max"])
+    for pad in IF["thermal"]["gap_pads"]:
+        items[pad["name"].replace(" ", "_")] = box(*pad["box_min"], *pad["box_max"])
     for i, z in enumerate(ob["lte_antenna"]["zones"]):
         items[f"lte_antenna_zone_{i + 1}"] = box(*z["box_min"], *z["box_max"])
 

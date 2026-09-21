@@ -33,17 +33,11 @@ for a in (ax,):
         a.add_patch(Circle(o["cyl_center"][:2], o["diameter"] / 2, fill=False, ec=c, lw=1.2, ls="-."))
         a.text(o["cyl_center"][0], o["cyl_center"][1], k, ha="center", fontsize=7, color=c)
     th = IF["thermal"]
-    for z in th["spreader_zones"]:
-        x0, y0, x1, y1 = z["box_xy"]
-        a.add_patch(Rectangle((x0, y0), x1 - x0, y1 - y0, fc="#f1c40f", alpha=0.10, ec="none"))
-    for k in th["spreader_keepouts"]:
-        if "box_xy" in k:
-            x0, y0, x1, y1 = k["box_xy"]
-            a.add_patch(Rectangle((x0, y0), x1 - x0, y1 - y0, fill=False, ec="#e74c3c", lw=0.9, hatch="//", alpha=0.5))
-    for p in th["thermal_posts"]:
+    for p in th["gap_pads"]:
         (x0, y0, _), (x1, y1, _) = p["box_min"], p["box_max"]
-        a.add_patch(Rectangle((x0, y0), x1 - x0, y1 - y0, fc="#e67e22", alpha=0.55, ec="#a04000"))
-    a.text(9.5, 3.2, "RF keep-out", fontsize=6.5, color="#c0392b")
+        a.add_patch(Rectangle((x0, y0), x1 - x0, y1 - y0, fc="#e67e22", alpha=0.45, ec="#a04000"))
+    a.text(-9, -36.5, "gap pad", fontsize=6.5, color="#a04000")
+    a.text(-1.5, 34, "gap pad", fontsize=6.5, color="#a04000")
     for z in ob["lte_antenna"]["zones"]:
         (x0, y0, _), (x1, y1, _) = z["box_min"], z["box_max"]
         a.add_patch(Rectangle((x0, y0), x1 - x0, y1 - y0, fc="#e74c3c", alpha=0.25, ec="#c0392b"))
@@ -56,7 +50,7 @@ for a in (ax,):
     a.axhline(-10, color="0.6", lw=0.6, ls=":"); a.axhline(-20, color="0.6", lw=0.6, ls=":")
     a.text(21, -15, "+10 mm\ninsert\n(K->L)", fontsize=7, color="0.4")
     a.set_aspect("equal"); a.set_xlim(-26, 27); a.set_ylim(-62, 50); a.grid(True, lw=0.25)
-    a.set_title("Plan view (enclosure L coords, mm)\nsolid = top side, dotted = bottom; yellow = copper-foil spreader, hatched = keep-out, orange = thermal posts", fontsize=10)
+    a.set_title("Plan view (enclosure L coords, mm)\nsolid = top side, dotted = bottom; orange = thermal gap pads, teal = touch pad", fontsize=10)
 # side view: z vs y extents
 for n, e in EXT.items():
     x0, x1, y0, y1, z0, z1 = e

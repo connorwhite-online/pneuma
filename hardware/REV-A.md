@@ -12,7 +12,7 @@ validation. The PCBs are *placed, not routed*. Nothing here has been built or po
 | Populated board STEPs (KiCad export) | `kicad/out/pneuma-main.step`, `kicad/out/pneuma-pwr.step` |
 | Enclosure-L interface (all coordinates, z-levels, envelopes) | [`mechanical/enclosure-L-electronics.json`](mechanical/enclosure-L-electronics.json) |
 | Layout plan + side view | [`kicad/out/layout-L.png`](kicad/out/layout-L.png) |
-| Copper spreader cut outline | [`kicad/out/spreader-front-L.dxf`](kicad/out/spreader-front-L.dxf) |
+| Thermal estimate (why there's no spreader) | [`kicad/tools/thermal_estimate.py`](kicad/tools/thermal_estimate.py) |
 | Regenerate everything | `hardware/kicad/tools/build.sh` |
 | Camera module RFQ (blocking enclosure L) | [`CAMERA-RFQ.md`](CAMERA-RFQ.md) |
 
@@ -38,7 +38,7 @@ None of these checks is electrical validation.
 | USB-C GCT USB4500 (IP67) | **GCT USB4105-GF-A** | K's port isn't sealed yet. The IP67 part returns with the seal design. |
 | BQ24074 on VSYS for everything | BQ24074, but **modem on VBAT** | BQ24074 OUT regulates to **4.4 V**, above the EG800Q's 4.3 V maximum (TI datasheet, device comparison table). |
 | Aluminum perimeter frames + TPU membranes (K) | **Two-piece silicone/TPU shell, no metal**, plus a rigid internal carrier | A metal ring around the whole device was the biggest unsolved LTE-antenna problem. Soft skin also feels cooler at the same temperature. |
-| Aluminum unibody as heat sink + graphite | **0.1 mm copper foil spreader** inside the front shell, **copper-shim posts** on the SoC and modem, generic silicone pads (< ~$5) | Cheapest option, all commodity materials. Heat has to be *spread* across the skin; the outer surface does the dissipating. The ATS-VC-042 vapor chamber (100×40×3 mm) was rejected: it doesn't fit and only spreads. |
+| Aluminum unibody as heat sink + graphite | **PCB copper does the spreading; two off-the-shelf silicone gap pads** carry board→shell | Measured first: a 60 s session lifts the device ~2.3 K, and the 43 °C ceiling is set by skin area (~3.3 W continuous) regardless of internals. A vapor chamber doesn't fit and only spreads; a copper-foil + rigid-post stack can't hold pressure against a soft shell. |
 
 ## 2. Architecture (two boards + FFC)
 
@@ -195,15 +195,21 @@ Everything is in [`mechanical/enclosure-L-electronics.json`](mechanical/enclosur
 7. **RF:**
    - No copper or metal in the keep-out at x 9–23.5, y 2–16. That covers the nRF chip antenna and the Core1106 Wi-Fi/BT antenna.
    - **LTE antenna pockets** in the soft USB-end wall on either side of the USB channel: x −21…−7.5 and 7.5…18, y −50.5…−47, z 3–10. This only works because there's no metal frame. The FPC antenna part is still to be picked.
-8. **Thermal (cheapest, all commodity materials):**
-   - **Spreader:** 0.07–0.1 mm copper foil or adhesive copper tape on the *inside of the front shell*. Cut outline: `kicad/out/spreader-front-L.dxf` (2 pieces, ~2030 mm², ~1.8 g). It already excludes the RF keep-outs, touch area, LTE pockets, camera cone, mic ports, speaker vents and LED window.
-   - **Posts:** stacked generic copper shims (0.5/1.0/1.5 mm laptop type), with a 0.5 mm silicone thermal pad (3–6 W/mK) at each end:
-     - SoC post: x −5…2, y 31…37, from the Core top (z 8.42) to the skin
-     - modem post: x −15…−2, y −42.5…−31, from the modem lid (z 7.2) to the skin
-   - Don't use a thick gap pad alone: about 10 K/W across a 3–4 mm gap.
-   - Leave the copper electrically floating at first. Add a single GND tie only if EMI testing calls for it.
-   - The rear shell stays insulating.
-   - **Budget:** about +15 °C over ambient at 3 W continuous even with perfect spreading. Short Q&A bursts ride on thermal mass. **Measure in Phase 0 before installing anything.** If bursts stay under the skin limit, the spreader may not be needed at all. Graphite sheet is the upgrade if hot spots persist.
+8. **Thermal — no spreader, no cutting.** Numbers from [`kicad/tools/thermal_estimate.py`](kicad/tools/thermal_estimate.py):
+
+   | | |
+   |---|---|
+   | Skin area 186 cm², to-air ≈ **5.4 K/W** | **43 °C skin is reached at ~3.3 W continuous** — that ceiling is set by surface area, not by anything inside |
+   | Device heat capacity ≈ 72 J/K, time constant ≈ 6 min | **A 60 s session at 3 W lifts the whole device ~2.3 K** |
+   | Modem → shell across a bare 1.5 mm air gap | +8 K at 60 s, but **+36 K at 10 min** |
+   | Same step with **one silicone gap pad** | +0.5 K |
+
+   So the burst interaction needs no thermal hardware at all, and the gap pads exist for sustained modes.
+   - **The PCB is the spreader.** 4-layer copper goes isothermal in milliseconds. Routing must put a thermal via field under the EG800Q-NA ground pads into both inner planes, stitch the Core1106 GND stamp pads in, and not neck inner copper around the modem. Zero parts, zero assembly.
+   - **Two off-the-shelf silicone gap pads**, ≥3 W/mK, 3 mm, pre-cut squares: one on the modem lid (x −15…−3, y −42.5…−31), one on the Core1106 top between the LRA and camera (x −5…2, y 31…37). Compressible, so they absorb the tolerance of a soft shell — which a rigid post cannot. Non-conductive, so unlike copper they impose no antenna or touch keep-outs.
+   - **Firmware duty limiting is the real control**, because the ceiling is skin area.
+   - **If the bench disagrees:** cast the front shell in thermally conductive silicone (k 1–3, no extra parts, just a different material at mould time), or peel-and-stick pre-cut graphite pads inside the front shell.
+   - **Rejected:** the ATS-VC-042 vapor chamber (100 × 40 × 3 mm, 18 g, rated 124 W) — longer than the cavity, no 3 mm layer spare, and it only spreads. Also rejected: the copper-foil + shim-post + putty stack I specced first. It was fiddly to assemble and depended on a rigid post holding pressure against a silicone wall.
 
 ## 7. Open items (not frozen, need a decision or a measurement)
 - **Routing** both boards: impedance-controlled USB, MIPI and RF; power pours; via-in-pad under the LGA. This is the next KiCad task.
@@ -228,6 +234,7 @@ Everything is in [`mechanical/enclosure-L-electronics.json`](mechanical/enclosur
   - **Connector caveat:** J4 is 20P on the Luckfox pinout, which is what the bench (B) uses. Many compact modules are **24P**. Regenerating J4 for a 24P module is a small change to `design.py`, but the module's drawing and pinout have to come first.
 - **Thermal numbers:** skin temperature over a 60 s and a 10 min session, with and without the copper spreader (Phase 0 mock-up: copper tape inside a printed TPU shell).
 - **Speaker acoustics** (front volume, vents) — note the vents now sit just above the touch pad.
+- **Sustained-mode thermals:** 10 min at 3 W is where the gap pads and duty limiting earn their place. Measure it in Phase 0 before deciding whether the front shell needs conductive silicone.
 - **Touch sensitivity:** the battery pouch is ~1–2 mm behind the pad's lower half and the speaker sits just above it; both reduce sensitivity. Tune C25 (Cs) against the final electrode, and consider a foam spacer to hold the electrode off the metal.
 - **RF pi-match** R14/C13/C14 values, tuned on the real antenna.
 - **Passive specs** in the CSVs are value + footprint only. Use X5R/X7R ≥6.3 V (≥10 V on VBUS/VSYS bulk) and 1% resistors. Pick LCSC part numbers at order time.

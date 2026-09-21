@@ -14,7 +14,7 @@ mkdir -p ../out
 "$KPY" lib_gen.py
 "$KPY" gen_sch.py
 "$KPY" gen_pcb.py
-"$KPY" export_interface.py 2>/dev/null | grep wrote
+"$KPY" export_interface.py 2>/dev/null | grep wrote || { echo "export_interface FAILED"; exit 1; }
 python3 bom.py
 for b in pneuma-main pneuma-pwr; do
   "$KCLI" sch erc "../$b/$b.kicad_sch" -o "../out/$b-erc.rpt" --severity-error >/dev/null || true
@@ -24,6 +24,5 @@ for b in pneuma-main pneuma-pwr; do
   grep -E "ERC messages|Errors" "../out/$b-erc.rpt" | head -1 | sed "s/^/$b ERC: /"
   grep -E "Found [0-9]+ DRC" "../out/$b-drc.rpt" | sed "s/^/$b DRC(errors): /"
 done
-"$CQ_PY" assemble_L.py 2>/dev/null | head -1
-"$CQ_PY" spreader_dxf.py
+"$CQ_PY" assemble_L.py | head -1
 "$CQ_PY" plot_layout.py

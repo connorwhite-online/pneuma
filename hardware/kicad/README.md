@@ -16,7 +16,7 @@ Footprint paths are set to the schematic symbol UUIDs to make that work.
 - `vendor/luckfox-core1106/`: Luckfox's KiCad symbol/footprint/STEP, pinout and schematic, unmodified
 - `out/`: build output, **regenerated, mostly not versioned**. `build.sh` writes the board STEPs, schematic PDFs,
   ERC/DRC reports and the spreader DXF here; git keeps only the small readable ones (BOM CSVs, `layout-L.png`,
-  `interference-L.json`, `spreader-stock-pads.json`). The STEP/DXF deliverables also go to the Desktop handoff folder.
+  `interference-L.json`). The STEP deliverables also go to the Desktop handoff folder.
 
 Regeneration is deterministic in what matters: identical part placement, nets and coordinates every run
 (`design.REV_DATE` freezes the title-block date; override with `PNEUMA_REV_DATE`). KiCad still assigns fresh

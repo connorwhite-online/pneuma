@@ -90,48 +90,36 @@ ENCLOSURE = {
     "wall": "front/rear skin 0.8-1.2 mm over the spreader; material k ~0.2 W/mK is fine once heat is spread",
 }
 THERMAL = {
-    "strategy": "spread, don't sink, with commodity materials: 0.1 mm copper foil (C110 sheet or adhesive copper "
-                "tape) on the INSIDE of the front shell, fed by two copper-shim thermal posts, generic silicone "
-                "thermal pads at every interface. Total parts cost < ~$5. Step 0: measure on the bench first; short "
-                "Q&A bursts may need no spreader at all. Upgrade path if hot spots persist: graphite sheet (~4x the "
-                "spreading of copper at equal thickness). Rejected: ATS-VC-042 vapor chamber (100x40x3 mm, 18 g).",
-    "no_cut_option": {"what": "4 off-the-shelf adhesive graphite pads, peel-and-stick, no cutting at all",
-                      "pads": [{"size_mm": [30, 20], "center_xy": [-3.5, -32.0], "covers": "modem + modem post"},
-                               {"size_mm": [15, 10], "center_xy": [-4.0, 37.0], "covers": "SoC post"},
-                               {"size_mm": [10, 15], "center_xy": [3.5, 10.5], "covers": "main board, lower"},
-                               {"size_mm": [10, 15], "center_xy": [11.5, 26.5], "covers": "main board, right"}],
-                      "coverage": "1050 mm2 = ~52% of the custom-cut area; both posts still land on a pad",
-                      "rest_of_chain": "copper shim kits (10x10/15x15, assorted thicknesses) for the posts; "
-                                       "thermal putty from a syringe instead of cut TIM pads"},
-    "materials": {"spreader": "copper foil/tape 0.07-0.1 mm, cut with a knife or vinyl cutter from the DXF of spreader_zones",
-                  "posts": "stacked generic copper shims (laptop GPU shim type, 0.5/1.0/1.5 mm), cut to size",
-                  "tim": "generic silicone thermal pad 0.5 mm, 3-6 W/mK (compressible, absorbs stack tolerance)",
-                  "rf_note": "copper is conductive: honour spreader_keepouts; leave it floating first, try one GND "
-                             "tie point only if EMI testing asks for it"},
-    "budget": "whole-skin natural convection+radiation ~0.2 W/K -> ~+15 C over ambient at 3 W continuous even if "
-              "perfectly spread; short Q&A bursts ride on thermal mass. Measure in Phase 0.",
-    "spreader_zones": [
-        {"name": "main", "box_xy": [-19.5, 16.0, 19.5, 44.5], "z_under_front_skin": True},
-        {"name": "main_low_left", "box_xy": [-19.5, 2.5, 9.0, 16.0], "z_under_front_skin": True},
-        {"name": "pwr", "box_xy": [-20.5, -46.0, 17.5, -21.0], "z_under_front_skin": True},
+    "strategy": "no spreader, no foil, no cutting. The PCB is the spreader (4-layer copper goes isothermal in "
+                "milliseconds), and ONE compressible silicone gap pad per hot part carries the board-to-shell step. "
+                "A soft shell cannot hold tolerance against a rigid post, which is why the earlier copper-foil + "
+                "shim-post design was dropped; a squishy pad absorbs the same tolerance for free.",
+    "numbers": {"source": "hardware/kicad/tools/thermal_estimate.py (lumped, first order)",
+                "skin_area_cm2": 186, "to_air_K_per_W": 5.4,
+                "ceiling": "43 C skin is reached at ~3.3 W CONTINUOUS regardless of internal material",
+                "burst": "a 60 s session at 3 W lifts the whole device only ~2.3 K (device time constant ~6 min)",
+                "modem_local_step": {"bare_1.5mm_air_gap": "+8 K at 60 s, +36 K at 10 min (26.8 K/W)",
+                                     "one_gap_pad_3W_mK": "+0.5 K (0.3 K/W)"},
+                "conclusion": "the burst interaction needs no thermal hardware at all; the gap pads exist for "
+                              "sustained modes (nav, music, long calls), and firmware duty limiting is the real "
+                              "control because the ceiling is skin area, not conduction"},
+    "gap_pads": [
+        {"name": "modem pad", "part": "generic silicone gap pad, >=3 W/mK, 3 mm uncompressed, pre-cut square",
+         "over": "EG800Q-NA lid", "box_min": [-15.0, -42.5, 7.2], "box_max": [-3.0, -31.0, 10.4]},
+        {"name": "SoC pad", "part": "same, 3 mm", "over": "Core1106 top, between the LRA and the camera",
+         "box_min": [-5.0, 31.0, 8.42], "box_max": [2.0, 37.0, 11.5]},
     ],
-    "spreader_keepouts": [
-        {"name": "nRF chip antenna + Core1106 WiFi/BT antenna", "box_xy": [9.0, 2.0, 23.5, 16.0]},
-        {"name": "touch electrode (front face, below the bump)", "box_xy": [-13.5, -13.5, 13.5, 5.5]},
-        {"name": "LTE antenna band", "box_xy": [-22.0, -59.0, 19.0, -46.0]},
-        {"name": "camera aperture + optical cone", "circle_xy": [0.0, 26.0], "diameter": 12.0},
-        {"name": "mic ports", "circles_xy": [[-15.9, 17.28], [-15.9, 22.08]], "diameter": 3.0},
-        {"name": "speaker vents", "circle_xy": [-8.0, 10.2], "diameter": 12.0},
-        {"name": "status LED window", "circle_xy": [0.7, 44.3], "diameter": 3.0},
-    ],
-    "thermal_posts": [
-        {"name": "SoC post (RV1106 corner of Core1106)", "box_min": [-5.0, 31.0, 8.45], "box_max": [2.0, 37.0, 12.2],
-         "note": "copper-shim stack + 0.5 mm silicone pad each end; bottom on the RV1106 package top, top on the "
-                 "spreader. Height = local skin z - 8.42 - pads; confirm clearance to the camera FPC"},
-        {"name": "modem post (EG800Q-NA lid)", "box_min": [-15.0, -42.5, 7.25], "box_max": [-2.0, -31.0, 10.3],
-         "note": "same construction on the modem lid; the modem TX burst is the largest heat source (~1-2 W)"},
-    ],
-    "gap_filler_note": "a soft gap pad alone over 3-4 mm is too resistive (~10 K/W); use a metal post + thin TIMs",
+    "routing_requirements": ["thermal via field under the EG800Q-NA ground pads into both inner planes",
+                             "stitch the Core1106 GND stamp pads into the planes",
+                             "do not neck the inner-layer copper around the modem"],
+    "if_bench_says_not_enough": ["cast the FRONT shell in thermally conductive silicone (k 1-3 W/mK) - no extra "
+                                 "parts, no assembly step, just a different material at mould time",
+                                 "add pre-cut adhesive graphite pads inside the front shell (peel and stick)",
+                                 "firmware: cap sustained-mode duty cycle"],
+    "why_not_a_vapor_chamber": "ATS-VC-042 is 100 x 40 x 3 mm and 18 g: longer than the cavity, no 3 mm layer "
+                               "spare, rated 124 W for a ~3 W problem, and it only spreads - the skin still does "
+                               "the dissipating",
+    "rf_note": "silicone pads are non-conductive, so unlike copper foil they impose no antenna or touch keep-outs",
 }
 
 
