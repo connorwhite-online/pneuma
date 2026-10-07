@@ -1,0 +1,92 @@
+(footprint "Pads_2x_1.2x1.6mm_P2.5mm"
+  (version 20241229)
+  (generator "pneuma_lib_gen")
+  (generator_version "1.0")
+  (layer "F.Cu")
+  (descr "Two solder pads for wire leads (LRA)")
+  (attr smd)
+  (property "Reference" "REF**"
+    (at 0 -2 0)
+    (layer "F.SilkS")
+    (uuid "79fa7e92-7f49-5ffd-9a4a-977b99218238")
+    (effects
+      (font
+        (size 1 1)
+        (thickness 0.15)
+      )
+    )
+  )
+  (property "Value" "Pads_2x_1.2x1.6mm_P2.5mm"
+    (at 0 2 0)
+    (layer "F.Fab")
+    (uuid "edc5b3f9-d517-5442-9636-3d07a3701687")
+    (effects
+      (font
+        (size 1 1)
+        (thickness 0.15)
+      )
+    )
+  )
+  (pad "1" smd rect
+    (at -1.25 0)
+    (size 1.2 1.6)
+    (layers "F.Cu" "F.Mask")
+    (uuid "03998404-2639-53a4-849c-b86a95f4a73a")
+  )
+  (pad "2" smd rect
+    (at 1.25 0)
+    (size 1.2 1.6)
+    (layers "F.Cu" "F.Mask")
+    (uuid "6bb86d87-7f3f-56e5-8699-71efe923e8d5")
+  )
+  (fp_line
+    (start -2.1 -1.05)
+    (end 2.1 -1.05)
+    (stroke
+      (width 0.05)
+      (type solid)
+    )
+    (layer "F.CrtYd")
+    (uuid "ae300eb4-3b6b-5068-8312-2ba12bd2817f")
+  )
+  (fp_line
+    (start 2.1 -1.05)
+    (end 2.1 1.05)
+    (stroke
+      (width 0.05)
+      (type solid)
+    )
+    (layer "F.CrtYd")
+    (uuid "05f023da-8acc-58b0-89e8-6483476b7251")
+  )
+  (fp_line
+    (start 2.1 1.05)
+    (end -2.1 1.05)
+    (stroke
+      (width 0.05)
+      (type solid)
+    )
+    (layer "F.CrtYd")
+    (uuid "17458d65-0234-5792-9a39-5c9c68d89cef")
+  )
+  (fp_line
+    (start -2.1 1.05)
+    (end -2.1 -1.05)
+    (stroke
+      (width 0.05)
+      (type solid)
+    )
+    (layer "F.CrtYd")
+    (uuid "f4a869ef-5b2d-50fa-b814-f989ab71209e")
+  )
+  (fp_line
+    (start -2.3 -1)
+    (end -2.3 1)
+    (stroke
+      (width 0.12)
+      (type solid)
+    )
+    (layer "F.SilkS")
+    (uuid "dde64364-55a7-5512-bf7a-34ab4287abdf")
+  )
+)

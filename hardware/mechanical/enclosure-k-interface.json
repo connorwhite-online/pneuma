@@ -1,0 +1,81 @@
+{
+  "revision": "K",
+  "status": "mechanical prototype; not a PCB fabrication specification",
+  "units": "mm",
+  "coordinates": {
+    "x": "width, camera centered at x=0",
+    "y": "long axis; USB-C at negative Y",
+    "z": "rear toward front",
+    "rear_exterior_rim_z": 0,
+    "front_frame_face_z": 12.2
+  },
+  "camera": {
+    "optical_axis": [
+      0,
+      0.5,
+      0.8660254037844386
+    ],
+    "tilt_deg": 30,
+    "aperture_axis_point": [
+      0,
+      26,
+      16.8
+    ],
+    "aperture_radius": 3.7,
+    "module": "SC3336 3MP Camera (B), provisional",
+    "mount_holes": null,
+    "ffc_pinout_confirmed": false
+  },
+  "usb": {
+    "mouth_center_xz": [
+      0,
+      6.1
+    ],
+    "throat_width": 9.4,
+    "throat_height": 3.6,
+    "entry_chamfer": 0.4,
+    "entry_edge_radius": 0.12,
+    "internal_wire_channel_width": 13,
+    "connector_variant_confirmed": false
+  },
+  "battery": {
+    "bom": "PKCell LP803860",
+    "nominal_body_xyz": [
+      36,
+      60,
+      8
+    ],
+    "body_min_xyz": [
+      -18,
+      -36,
+      2.5
+    ],
+    "body_max_xyz": [
+      18,
+      24,
+      10.5
+    ],
+    "status": "nominal body only; reserve pouch seams, swelling, protection and connector after supplier drawing"
+  },
+  "touch": {
+    "central_membrane_thickness_approx": 0.9,
+    "electrode_design": null,
+    "controller": null
+  },
+  "mount_strategy": {
+    "status": "proposed",
+    "rigid_frame_referenced_carrier": true,
+    "screws_threaded_into_tpu": false,
+    "final_hole_coordinates": null
+  },
+  "unresolved": [
+    "camera module outline, screw pattern and FFC pinout",
+    "speaker depth, sealed acoustic chamber and retainer",
+    "US/regional modem and antennas",
+    "PCB partition, stackup, connectors and mounting coordinates",
+    "touch electrode/controller and ground keepout",
+    "power path and transient current",
+    "thermal spreader coupled to perimeter frame",
+    "USB connector shell, retention and sealing"
+  ]
+}
